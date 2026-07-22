@@ -28,7 +28,7 @@ def after_request(response):
 @app.route("/")
 @login_required
 def index():
-    pass
+    return render_template("index.html")
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
@@ -73,6 +73,7 @@ def login():
 @app.route("/income", methods = ["GET", "POST"])
 @login_required
 def add_income():
+
     if request.method == "GET":
         return render_template("income.html") 
 
@@ -132,3 +133,7 @@ def budget():
 def stats():
     if request.method == "GET": 
         return render_template("stats.html")
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

@@ -17,18 +17,38 @@
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-                <div class="navbar-nav">
-                    <a class="nav-item nav-link active" href="/"> Home <span class="sr-only">(current)
-                    </span></a>
-                    <a class="nav-item nav-link" href="/budget">Budget</a>
-                    <a class="nav-item nav-link" href="/income">Add Income</a>
-                    <a class="nav-item nav-link" href="#">Jars</a>
-                    <a class="nav-item nav-link" href="#">Stats</a>
-                    <a class="nav-item nav-link" href="#">Settings</a>
-                    <a class="nav-item nav-link" href="#">Logout</a>
-                </div>
+            <div class="collapse navbar-collapse" id="navbar">
+                {% if session["user_id"] %}
+                    <ul class="navbar-nav ms-auto mt-2">
+                        <a class="nav-item nav-link active" href="/"> Home <span class="sr-only">(current)
+                        </span></a>
+                        <a class="nav-item nav-link" href="/budget">Budget</a>
+                        <a class="nav-item nav-link" href="/income">Add Income</a>
+                        <a class="nav-item nav-link" href="/jars">Jars</a>
+                        <a class="nav-item nav-link" href="/stats">Stats</a>
+                        <a class="nav-item nav-link" href="/settings">Settings</a>
+                    </ul>
+                    <ul class="navbar-nav ms-auto mt-2">
+                        <a class="nav-item nav-link" href="/logout">Logout</a>
+                    </ul>
+                {% else %}
+                    <ul class="navbar-nav ms-auto mt-2">
+                        <a class="nav-item nav-link" href="/login">Login</a>
+                        <a class="nav-item nav-link" href="/register">Register</a>
+                    </ul>
+                {% endif %}
             </div>
         </nav>
+        {% if get_flashed_messages() %}
+            <header>
+                <div class="alert alert-primary mb-0 text-center" role="alert">
+                    {{ get_flashed_messages() | join(" ") }}
+                </div>
+            </header>
+        {% endif %}
+
+        <main class="container py-5 text-center">
+            {% block main %}{% endblock %}
+        </main>
     </body>
 </html>
