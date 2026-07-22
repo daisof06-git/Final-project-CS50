@@ -59,4 +59,7 @@ def register():
 def budget():
     pass
 
+@app.route("/stats", methods = ["GET", "POST"])
+@login_required
+def stats():
 
