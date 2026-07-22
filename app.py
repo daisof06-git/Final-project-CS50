@@ -15,7 +15,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db = SQL("sqlite:///finance.db")
+db = SQL("sqlite:///budget.db")
 
 @app.after_request
 def after_request(response):
@@ -80,7 +80,13 @@ def jars():
 @app.route("/logout", methods = ["GET", "POST"])
 @login_required
 def logout():
-    pass
+    #log user out
+
+    # Forget any user_id
+    session.clear()
+
+    # Redirect user to login form
+    return redirect("/")
 
 @app.route("/register", methods = ["GET", "POST"])
 def register():
