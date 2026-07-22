@@ -94,4 +94,4 @@ def budget():
 @app.route("/stats", methods = ["GET", "POST"])
 @login_required
 def stats():
-
+    pass
