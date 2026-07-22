@@ -40,11 +40,13 @@ def login():
     if request.method == "POST":
         # Ensure username was submitted
         if not request.form.get("username"):
-            pass
+            flash("You must provide a Username")
+            return redirect("/login")
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            pass
+            flash("You must provide a password")
+            return redirect("/login")
 
         # Query database for username
         rows = db.execute(
@@ -55,7 +57,8 @@ def login():
         if len(rows) != 1 or not check_password_hash(
             rows[0]["hash"], request.form.get("password")
         ):
-            pass
+            flash("Incorrect username or password")
+            return redirect("/login")
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -70,12 +73,14 @@ def login():
 @app.route("/income", methods = ["GET", "POST"])
 @login_required
 def add_income():
-    pass 
+    if request.method == "GET":
+        return render_template("income.html") 
 
 @app.route("/jars", methods = ["GET", "POST"])
 @login_required
 def jars():
-    pass
+    if request.method == "GET":
+        return render_template("jars.html")
 
 @app.route("/logout", methods = ["GET", "POST"])
 @login_required
@@ -90,14 +95,40 @@ def logout():
 
 @app.route("/register", methods = ["GET", "POST"])
 def register():
-    pass
+    session.clear()
+    username = request.form.get("username")
+    email = request.form.get("email")
+    password = request.form.get("password")
+    confirmation = request.form.get("confirmation")
+    if request.method == "POST":
+        if not username:
+            flash("You must add a username!")
+            redirect("/register")
+        if not password or not confirmation:
+            flash("You must add a password!")
+            redirect("/register")
+        if password != confirmation:
+            flash("Passwords don't match!")
+            redirect("/register")
+        try:
+            hashpas = generate_password_hash(password)
+            db.execute("INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
+            print("You have successfully registered!")
+            return render_template("login.html")
+        except ValueError:
+            flash("Username already exists")
+            return redirect("/register")
+    if request.method == "GET":
+        return render_template("register.html")
 
 @app.route("/budget", methods = ["GET", "POST"])
 @login_required
 def budget():
-    pass
+    if request.method == "GET": 
+        return render_template("budget.html")
 
 @app.route("/stats", methods = ["GET", "POST"])
 @login_required
 def stats():
-    pass
+    if request.method == "GET": 
+        return render_template("stats.html")
