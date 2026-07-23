@@ -3,3 +3,13 @@
 {% block title %}
     Jars
 {% endblock %}
+
+{% block main %}
+    <h1>Your jars</h1>
+    <div class = "jars-list">
+        {{% for jar in jars %}}
+        <button type="button" class="btn btn-primary btn-sm">{{jar.jar_name}}</button>
+        {{% endfor %}}
+        <button type="button" class="btn btn-primary btn-sm" name = "add">+</button>
+    </div>
+{% endblock %}

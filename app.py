@@ -28,7 +28,12 @@ def after_request(response):
 @app.route("/")
 @login_required
 def index():
-    return render_template("index.html")
+    id = session["user_id"]
+    jars = db.execute(
+    "SELECT * FROM jars WHERE user_id = ?", id)
+    available_income = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["income"]
+    if request.method == "GET":
+        return render_template("index.html", jars = jars, income = available_income)
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
@@ -96,11 +101,45 @@ def add_income():
     if request.method == "GET":
         return render_template("income.html") 
 
-@app.route("/jars", methods = ["GET", "POST"])
+@app.route("/jars", methods =  "POST")
 @login_required
-def jars():
-    if request.method == "GET":
-        return render_template("jars.html")
+def update_jar():
+    jar_id = request.form.get("jar_id")
+    id = session["user_id"]
+    action = request.form.get("action")
+    jarbal = db.execute("SELECT * FROM jars WHERE user_id = ?, id = ?", id, jar_id)[0]["amount"]
+    user_income = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["income"]
+    if action == "add": 
+        #amount is a number
+        try: 
+            amount = float(request.form.get("amount"))
+        except ValueError:
+            redirect("/jars")
+        
+        try: 
+            user_income = float(user_income)
+        except ValueError: 
+            redirect("/jars")
+        if user_income == 0: 
+            redirect("/jars")
+        if user_income < amount: 
+            redirect("/jars")
+        db.execute("UPDATE jars SET amount = amount + ? WHERE user_id = ? AND id = ?", amount, id, jar_id)
+        return render_template("/index.html")
+    elif action == "remove": 
+        try: 
+            amount = float(request.form.get("amount"))
+        except ValueError:
+            redirect("/jars")
+        if jarbal < amount: 
+            redirect("/jars")
+        db.execute("UPDATE jars SET amount = amount - ? WHERE user_id = ? AND id = ?", amount, id, jar_id)
+        return render_template("/index.html")
+    elif action == "delete":
+        db.execute("DELETE * FROM jars WHERE user_id = ? AND jar_id = ?",id, jar_id)
+        return render_template("/index.html")
+
+    
 
 @app.route("/logout", methods = ["GET", "POST"])
 @login_required
