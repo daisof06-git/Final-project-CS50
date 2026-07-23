@@ -40,8 +40,7 @@ def login():
     if request.method == "POST":
         # Ensure username was submitted
         if not request.form.get("username"):
-            flash("You must provide a Username")
-            return redirect("/login")
+            return render_template("login.html", error = "Must provide a username")
 
         # Ensure password was submitted
         elif not request.form.get("password"):
