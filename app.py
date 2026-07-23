@@ -44,8 +44,7 @@ def login():
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            flash("You must provide a password")
-            return redirect("/login")
+            return render_template("login.html", error = "Must provide a password")
 
         # Query database for username
         rows = db.execute(
@@ -56,8 +55,7 @@ def login():
         if len(rows) != 1 or not check_password_hash(
             rows[0]["hash"], request.form.get("password")
         ):
-            flash("Incorrect username or password")
-            return redirect("/login")
+            return render_template("login.html", error = "Incorrect username or password")
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -79,23 +77,20 @@ def add_income():
 
         # Validate income
         if not income:
-            flash("Must insert a positive amount")
-            return redirect("/income")
+            return render_template("income.html", error = "Must insert a positive amount")
 
         try:
             income = float(income)
         except ValueError:
-            flash("Must insert a positive amount")
-            return redirect("/income")
+            return render_template("income.html", error = "Must insert a positive amount")
         if income <= 0:
-            flash("Must insert a positive amount")
-            return redirect("/income")
+            return render_template("income.html", error = "Must insert a positive amount")
 
-        # get current income
-        current_income = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
+        # get current balance
+        current_balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
 
         # update balance
-        new_balance = current_income + income
+        new_balance = current_balance + income
         db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
         return redirect("/")
     if request.method == "GET":
@@ -127,25 +122,20 @@ def register():
     confirmation = request.form.get("confirmation")
     if request.method == "POST":
         if not username:
-            flash("You must add a username!")
-            redirect("/register")
+            return render_template("register.html", error = "Must add a username")
         if not password or not confirmation:
-            flash("You must add a password!")
-            redirect("/register")
+            return render_template("register.html", error = "Must add a password")
         if not email: 
-            flash("You must add an email")
-            redirect("/register")
+            return render_template("register.html", error = "Must add an email")
         if password != confirmation:
-            flash("Passwords don't match!")
-            redirect("/register")
+            return render_template("register.html", error = "Passwords don't match!")
         try:
             hashpas = generate_password_hash(password)
             db.execute("INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
             print("You have successfully registered!")
             return render_template("login.html")
         except ValueError:
-            flash("Username already exists")
-            return redirect("/register")
+            return render_template("register.html", error = "Username already exists")
     if request.method == "GET":
         return render_template("register.html")
 
