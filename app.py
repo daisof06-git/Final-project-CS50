@@ -73,7 +73,32 @@ def login():
 @app.route("/income", methods = ["GET", "POST"])
 @login_required
 def add_income():
+    if request.method == "POST": 
+        id = session["user_id"]
+    if request.method == "POST":
+        income = request.form.get("income")
 
+        # Validate income
+        if not income:
+            flash("Must insert a positive amount")
+            return redirect("/income")
+
+        try:
+            income = float(income)
+        except ValueError:
+            flash("Must insert a positive amount")
+            return redirect("/income")
+        if income <= 0:
+            flash("Must insert a positive amount")
+            return redirect("/income")
+
+        # get current income
+        current_income = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
+
+        # update balance
+        new_balance = current_income + income
+        db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
+        return redirect("/")
     if request.method == "GET":
         return render_template("income.html") 
 
