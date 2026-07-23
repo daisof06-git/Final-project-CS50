@@ -133,6 +133,9 @@ def register():
         if not password or not confirmation:
             flash("You must add a password!")
             redirect("/register")
+        if not email: 
+            flash("You must add an email")
+            redirect("/register")
         if password != confirmation:
             flash("Passwords don't match!")
             redirect("/register")

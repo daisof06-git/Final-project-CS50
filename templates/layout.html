@@ -44,13 +44,13 @@
                 {% endif %}
             </div>
         </nav>
-        {% for msg in get_flashed_messages() %}
+        {% if get_flashed_messages() %}
             <header>
                 <div class="alert alert-primary mb-0 text-center" role="alert">
                     {{ get_flashed_messages() | join(" ") }}
                 </div>
             </header>
-        {% endfor %}
+        {% endif %}
 
         <main class="container py-5 text-center">
             {% block main %}{% endblock %}
