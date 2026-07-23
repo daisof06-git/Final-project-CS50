@@ -11,6 +11,7 @@
         
         <!--css-->
         <link href="/static/styles.css" rel="stylesheet">
+        <style>@import url('https://fonts.googleapis.com/css2?family=Concert+One&display=swap');</style>
 
         <title>BudgetJars: {% block title %}{% endblock %}</title>
     </head>
@@ -25,7 +26,7 @@
             <div class="collapse navbar-collapse" id="navbar">
                 {% if session["user_id"] %}
                     <ul class="navbar-nav ms-auto mt-2">
-                        <a class="nav-item nav-link active" href="/"> Home <span class="sr-only">(current)
+                        <a class="nav-item nav-link active" href="/"> Home <span class="sr-only">
                         </span></a>
                         <a class="nav-item nav-link" href="/budget">Budget</a>
                         <a class="nav-item nav-link" href="/income">Add Income</a>
