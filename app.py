@@ -29,9 +29,9 @@ def after_request(response):
 @login_required
 def index():
     id = session["user_id"]
-
+    jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
     if request.method == "GET":
-        return render_template("index.html")
+        return render_template("index.html", jars = jars)
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
@@ -144,11 +144,64 @@ def register():
     if request.method == "GET":
         return render_template("register.html")
 
-@app.route("/budget", methods = ["GET", "POST"])
+@app.route("/budget", methods = ["POST"])
 @login_required
 def budget():
-    if request.method == "GET": 
-        return render_template("budget.html")
+    id = session["user_id"]
+    jar = request.form.get("jar")
+    action = request.form.get("action")
+    amount = request.form.get("amount")
+    #convert amount
+    try: 
+        amount = float(amount)
+    except ValueError: 
+        return render_template("index.html", error = "Must insert a positive amount!")
+
+    balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
+
+    #convert balance if necessary
+    try: 
+        balance = float(balance)
+    except ValueError: 
+        balance = 0
+    if action == "Add":
+        #check balance
+        if balance < amount: 
+            return render_template("index", error = "Not enough money!")
+
+        #update jar
+        db.execute("UPDATE jars SET amount = amount + ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
+
+        #update users
+        new_balance = balance - amount 
+        db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
+
+        return render_template("index.html")
+
+    elif action == "Extract":
+        #check jar_balance
+        jar_bal = db.execute("SELECT * FROM jars WHERE jar_name = ?", jar)[0]["amount"]
+        if jar_bal < amount: 
+            return render_template("index.html", error = "Not enough money in jar!")
+
+        #update jar
+        db.execute("UPDATE jars SET amount = amount - ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
+
+        #update balance
+        if balance == 0: 
+           db.execute("UPDATE users SET balance = ? WHERE id = ?", amount, id) 
+        elif balance > 0:
+            db.execute("UPDATE users SET balance = balance + ? WHERE id = ?", amount, id)
+
+        return render_template("index.html")
+    else: 
+        return render_template("index.html", error = "Must insert a valid action")
+        
+        
+
+
+
+            
 
 @app.route("/stats", methods = ["GET", "POST"])
 @login_required

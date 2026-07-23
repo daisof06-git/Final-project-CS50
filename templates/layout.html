@@ -11,38 +11,53 @@
         
         <!--css-->
         <link href="/static/styles.css" rel="stylesheet">
-        <style>@import url('https://fonts.googleapis.com/css2?family=Concert+One&display=swap');</style>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Concert+One&family=Tuffy:ital,wght@0,400;0,700;1,400;1,700&display=swap');</style>
 
         <title>BudgetJars: {% block title %}{% endblock %}</title>
     </head>
     <body>
-        <nav class="navbar navbar-expand-md navbar-light bg-light">
+        <nav class="navbar navbar-expand-md navbar-light" style = "background-color:#dd9b88;">
             <div class = "container-fluid">
                 <a class="navbar-brand" href="/">Jars</a>
-            </div>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbar">
-                {% if session["user_id"] %}
-                    <ul class="navbar-nav ms-auto mt-2">
-                        <a class="nav-item nav-link active" href="/"> Home <span class="sr-only">
-                        </span></a>
-                        <a class="nav-item nav-link" href="/budget">Budget</a>
-                        <a class="nav-item nav-link" href="/income">Add Income</a>
-                        <a class="nav-item nav-link" href="/jars">Jars</a>
-                        <a class="nav-item nav-link" href="/stats">Stats</a>
-                        <a class="nav-item nav-link" href="/settings">Settings</a>
-                    </ul>
-                    <ul class="navbar-nav ms-auto mt-2">
-                        <a class="nav-item nav-link" href="/logout">Logout</a>
-                    </ul>
-                {% else %}
-                    <ul class="navbar-nav ms-auto mt-2">
-                        <a class="nav-item nav-link" href="/login">Login</a>
-                        <a class="nav-item nav-link" href="/register">Register</a>
-                    </ul>
-                {% endif %}
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbar">
+                    {% if session["user_id"] %}
+                        <ul class="navbar-nav mr-auto">
+                            <li class = "nav-item">
+                                <a class="nav-link" href="/budget">Budget</a>
+                            </li>
+                            <li class = "nav-item">
+                                <a class="nav-link" href="/income">Add Income</a>
+                            </li>
+                            <li class = "nav-item">
+                                <a class="nav-link" href="/jars">Jars</a>
+                            </li>
+                            <li class = "nav-item">
+                                <a class="nav-link" href="/stats">Stats</a>
+                            </li>
+                            <li class = "nav-item">
+                                <a class="nav-link" href="/settings">Settings</a>
+                            </li>
+                        </ul>
+
+                        <ul class="navbar-nav ms-auto mt-2">
+                            <li class ="nav-link">
+                                <a class="nav-item nav-link" href="/logout">Logout</a>
+                            </li>
+                        </ul>
+                    {% else %}
+                        <ul class="navbar-nav ms-auto mt-2">
+                            <li class = "nav-item">
+                                <a class="nav-item nav-link" href="/login">Login</a>
+                            </li>
+                            <li class = "nav-item">
+                                <a class="nav-item nav-link" href="/register">Register</a>
+                            </li>
+                        </ul>
+                    {% endif %}
+                </div>
             </div>
         </nav>
         {% if error %}

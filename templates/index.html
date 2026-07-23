@@ -9,11 +9,31 @@
         <div class = "row">
             <div class = "col-lg-6">
                 <h2>Available income</h2>
-                <img src="/static/jar-empty.svg" class="base">
+                <img src="/static/jar-empty.svg" class="img-fluid">
                 <p>{{balance}}</p>
             </div>
             <div class = "col-lg-6">
                 <h2> Budget</h2>
+                <form action ="/budget" method = "post">
+                    <div class="mb-3">
+                        <select class="form-select mx-auto w-auto" name="jar">
+                            <option disabled selected>Jar</option>
+                            {% for jar in jars %}
+                                <option value = "{{jar.jar_name}}" >{{jar.jar_name}}</option>
+                            {% endfor %}
+                        </select>
+                        <select class="form-select mx-auto w-auto" name="action">
+                            <option disabled selected>Action</option>
+                            <option value = "Add">Add Money</option>
+                            <option value = "Extract">Extract Money</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <input autocomplete="off" class="form-control mx-auto w-auto" min="0" name="amount" placeholder="Amount" type="number">
+                    </div>
+                    <button class="btn btn-primary" type="submit">Update</button>
+                </form>
             </div>
         </div>
+    </div>
 {% endblock %}
