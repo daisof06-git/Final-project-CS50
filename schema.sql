@@ -11,13 +11,13 @@ CREATE TABLE jars(
     user_id INTEGER NOT NULL,
     jar_name TEXT NOT NULL,
     income BOOLEAN DEFAULT FALSE, 
-    amount INTEGER, 
+    amount NUMERIC, 
     FOREIGN KEY(user_id) REFERENCES users(id));
 
 CREATE TABLE movements(
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     user_id INTEGER NOT NULL,
-    amount INTEGER NOT NULL,
+    amount NUMERIC NOT NULL,
     new_jar_id INTEGER NOT NULL, 
     last_jar_id INTEGER NOT NULL,
     date DATE NOT NULL DEFAULT CURRENT_DATE,

@@ -5,33 +5,15 @@
 {% endblock %}
 
 {% block main %}
-    <div class = "parent-container">
-        <div class = "child-box left-box">
-            <div class = "jar">
+    <div class = "container-fluid">
+        <div class = "row">
+            <div class = "col-lg-6">
                 <h2>Available income</h2>
-                <img src="jar-empty.svg" class="base">
-                <p>{{income}}</p>
+                <img src="/static/jar-empty.svg" class="base">
+                <p>{{balance}}</p>
+            </div>
+            <div class = "col-lg-6">
+                <h2> Budget</h2>
             </div>
         </div>
-        <div class = "child-box right-box">
-        <h2>Your jars</h2>
-                <div class = "jars-list">
-                    {{% for jar in jars %}}
-                        <button type="button" class="btn btn-primary btn-sm"
-                        data-id = "{{jar.id}}" data-name="{{jar.jar_name}}">{{jar.jar_name}}</button>
-                    {{% endfor %}}
-                     <button type="button" class="btn btn-primary btn-sm" name = "add">+</button>
-                </div>
-        </div>
-    </div>
-    <div id = "overlay" class = "hidden">
-        <form action = "/jars" method = "post">
-            <input type="hidden" id="jar_id" name="jar_id">
-            <h2 id="jar_name"></h2>
-            <input type="number" name="amount">
-            <button name="action" value="add"> Add money</button>
-            <button name="action" value="remove"> Remove money </button>
-            <button name="action" value="delete"> Delete jar </button>
-        </form>
-    </div>
 {% endblock %}
