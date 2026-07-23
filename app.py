@@ -43,12 +43,13 @@ def login():
     if request.method == "POST":
         # Ensure username was submitted
         if not request.form.get("username"):
-            return render_template("login.html", error = "Must provide a username")
+            flash("Must provide a username", "error")
+            return render_template("login.html")
 
         # Ensure password was submitted
         elif not request.form.get("password"):
-            return render_template("login.html", error = "Must provide a password")
-
+            flash("Must provide a password", "error")
+            return render_template("login.html")
         # Query database for username
         rows = db.execute(
             "SELECT * FROM users WHERE username = ?", request.form.get("username")
@@ -58,7 +59,8 @@ def login():
         if len(rows) != 1 or not check_password_hash(
             rows[0]["hash"], request.form.get("password")
         ):
-            return render_template("login.html", error = "Incorrect username or password")
+            flash("Incorrect username or password", "error")
+            return render_template("login.html")
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -80,13 +82,16 @@ def add_income():
 
         # Validate income
         if not income:
-            return render_template("income.html", error = "Must insert a positive amount")
+            flash("Must insert a positive amount", "error")
+            return redirect("/income")
         try:
             income = float(income)
         except ValueError:
-            return render_template("income.html", error = "Must insert a positive amount")
+            flash("Must insert a positive amount", "error")
+            return redirect("/income")
         if income <= 0:
-            return render_template("income.html", error = "Must insert a positive amount")
+            flash("Must insert a positive amount", "error")
+            return redirect("/income")
 
         # get current balance
         current_balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
@@ -101,10 +106,13 @@ def add_income():
     if request.method == "GET":
         return render_template("income.html") 
 
-@app.route("/jars", methods =  ["POST"])
+@app.route("/jars", methods =  ["GET","POST"])
 @login_required
-def update_jar():
-    pass
+def jars():
+    if request.method == "POST":
+        pass
+    if request.method == "GET":
+        return render_template("jars.html")
     
 
 @app.route("/logout", methods = ["GET", "POST"])
@@ -127,20 +135,25 @@ def register():
     confirmation = request.form.get("confirmation")
     if request.method == "POST":
         if not username:
-            return render_template("register.html", error = "Must add a username")
+            flash("Must add a username", "error")
+            return render_template("register.html")
         if not password or not confirmation:
-            return render_template("register.html", error = "Must add a password")
+            flash("Must add a password", "error")
+            return render_template("register.html")
         if not email: 
-            return render_template("register.html", error = "Must add an email")
+            flash("Must add an email", "error")
+            return render_template("register.html")
         if password != confirmation:
-            return render_template("register.html", error = "Passwords don't match!")
+            flash("Passwords don't match!", "error")
+            return render_template("register.html")
         try:
             hashpas = generate_password_hash(password)
             db.execute("INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
-            print("You have successfully registered!")
-            return render_template("login.html")
+            flash("You have successfully registered!", "success")
+            return redirect("/login")
         except ValueError:
-            return render_template("register.html", error = "Username already exists")
+            flash("Username or email already exists!", "error")
+            return render_template("register.html")
     if request.method == "GET":
         return render_template("register.html")
 
@@ -155,7 +168,8 @@ def budget():
     try: 
         amount = float(amount)
     except ValueError: 
-        return render_template("index.html", error = "Must insert a positive amount!")
+        flash("Must insert a positive amount", "error")
+        return redirect("/budget")
 
     balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
 
@@ -167,7 +181,8 @@ def budget():
     if action == "Add":
         #check balance
         if balance < amount: 
-            return render_template("index", error = "Not enough money!")
+            flash("Not enough money!", "error")
+            return redirect("/budget")
 
         #update jar
         db.execute("UPDATE jars SET amount = amount + ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
@@ -176,13 +191,15 @@ def budget():
         new_balance = balance - amount 
         db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
 
+        flash("You have updated your jars successfully!", "success")
         return render_template("index.html")
 
     elif action == "Extract":
         #check jar_balance
         jar_bal = db.execute("SELECT * FROM jars WHERE jar_name = ?", jar)[0]["amount"]
         if jar_bal < amount: 
-            return render_template("index.html", error = "Not enough money in jar!")
+            flash("Not enough money in jar!", "error")
+            return redirect("/budget")
 
         #update jar
         db.execute("UPDATE jars SET amount = amount - ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
@@ -193,15 +210,12 @@ def budget():
         elif balance > 0:
             db.execute("UPDATE users SET balance = balance + ? WHERE id = ?", amount, id)
 
+        flash("You have updated your jars successfully!", "success")
         return render_template("index.html")
     else: 
-        return render_template("index.html", error = "Must insert a valid action")
+        flash("Must insert a valid action", "error")
+        return redirect("/budget")
         
-        
-
-
-
-            
 
 @app.route("/stats", methods = ["GET", "POST"])
 @login_required

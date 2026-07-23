@@ -16,7 +16,7 @@
         <title>BudgetJars: {% block title %}{% endblock %}</title>
     </head>
     <body>
-        <nav class="navbar navbar-expand-md navbar-light" style = "background-color:#dd9b88;">
+        <nav class="navbar navbar-expand-md navbar-light" style = "background-color:#b97a68;">
             <div class = "container-fluid">
                 <a class="navbar-brand" href="/">Jars</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,13 +60,13 @@
                 </div>
             </div>
         </nav>
-        {% if error %}
-            <header>
-                <div class="alert alert-primary mb-0 text-center" role="alert">
-                    {{ error }}
-                </div>
-            </header>
-        {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {{ category }}"> {{ message|capitalize }} </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <main class="container py-5 text-center">
             {% block main %}{% endblock %}

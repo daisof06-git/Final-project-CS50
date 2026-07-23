@@ -10,12 +10,7 @@ nav .navbar-brand
 
 body 
 {
-    background-color: #d9c4bf;
-}
-
-.card{
-    backdrop-filter:blur(20px);
-    border:1px solid rgba(255,255,255,.5);
+    background-color: #ffe6d7;
 }
 
 nav .nav-item{
@@ -36,3 +31,28 @@ select{
     margin-bottom: 10px; 
 }
 
+.btn-primary{
+    background-color:#a6290d;
+    border-color: #a6290d;
+}
+
+.btn-primary:hover{
+    background-color:#b97a68;
+    border-color: #b97a68;
+}
+
+.btn-primary:focus{
+    background-color:#fff5ee;
+    border-color: #b97a68;
+    color: #b97a68;
+}
+
+.alert.success {
+  background-color: #7dffa2;
+  color: #06521b;
+}
+
+.alert.error {
+  background-color: #f59f9f;
+  color: #9e0303;
+}
