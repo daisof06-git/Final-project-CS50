@@ -25,13 +25,12 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
-@app.route("/")
+@app.route("/", methods = ["GET", "POST"])
 @login_required
 def index():
     id = session["user_id"]
     jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
-    if request.method == "GET":
-        return render_template("index.html", jars = jars)
+    return render_template("index.html", jars = jars)
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
@@ -106,13 +105,13 @@ def add_income():
     if request.method == "GET":
         return render_template("income.html") 
 
-@app.route("/jars", methods =  ["GET","POST"])
+@app.route("/jars", methods =  ["GET", "POST"])
 @login_required
 def jars():
-    if request.method == "POST":
-        pass
-    if request.method == "GET":
-        return render_template("jars.html")
+    id = session["user_id"]
+    jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+    if request.method == "GET" or request.method == "POST":
+        return render_template("jars.html", jars = jars)
     
 
 @app.route("/logout", methods = ["GET", "POST"])
@@ -221,17 +220,21 @@ def budget():
 def add(): 
     user_id = session["user_id"]
     name = request.form.get("name")
+    jars = db.execute("SELECT * FROM jars WHERE user_id = ?", user_id)
+    if not name: 
+        flash("Must add a name!", "error")
+        return redirect("/jars")
     db.execute("INSERT INTO jars (user_id, jar_name, amount) VALUES (?,?,0)", user_id, name)
-    flash("Jar successfully added!")
+    flash("Jar successfully added!", "success")
     return redirect("/jars")
 
 @app.route("/delete", methods =["POST"])
 @login_required
 def delete():
     user_id = session["user_id"]
-    id = request.form.get("jar_id")
+    id = request.form.get("id")
     if id: 
-        db.execute("DELETE * from jars WHERE id = ? AND user_id = ?", id, user_id)
+        db.execute("DELETE from jars WHERE id = ? AND user_id = ?", id, user_id)
         flash("Jar successfully deleted!", "success")
     else: 
         flash("There has been a problem!", "error")

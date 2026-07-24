@@ -34,6 +34,8 @@ select{
 .btn-primary{
     background-color:#a6290d;
     border-color: #a6290d;
+    margin: 10px;
+    border-radius: 10px;
 }
 
 .btn-primary:hover{
@@ -48,11 +50,27 @@ select{
 }
 
 .alert.success {
-  background-color: #7dffa2;
+  background-color: #c2ff7d;
   color: #06521b;
 }
 
 .alert.error {
   background-color: #f59f9f;
   color: #9e0303;
+}
+
+.card-title{
+   color: #9e0303; 
+}
+
+.btn{
+    background-color:#a6290d;
+    border-color: #a6290d; 
+    margin: 10px;
+    border-radius: 10px;
+}
+
+.jar {
+    width: 150px;
+    text-align: center;
 }
