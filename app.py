@@ -215,7 +215,28 @@ def budget():
     else: 
         flash("Must insert a valid action", "error")
         return redirect("/budget")
-        
+
+@app.route("/add", methods = ["POST"])
+@login_required
+def add(): 
+    user_id = session["user_id"]
+    name = request.form.get("name")
+    db.execute("INSERT INTO jars (user_id, jar_name, amount) VALUES (?,?,0)", user_id, name)
+    flash("Jar successfully added!")
+    return redirect("/jars")
+
+@app.route("/delete", methods =["POST"])
+@login_required
+def delete():
+    user_id = session["user_id"]
+    id = request.form.get("jar_id")
+    if id: 
+        db.execute("DELETE * from jars WHERE id = ? AND user_id = ?", id, user_id)
+        flash("Jar successfully deleted!", "success")
+    else: 
+        flash("There has been a problem!", "error")
+    return redirect("/jars")
+    
 
 @app.route("/stats", methods = ["GET", "POST"])
 @login_required

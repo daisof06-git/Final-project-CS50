@@ -9,7 +9,17 @@
     <div class = "jars-list">
         {% for jar in jars %}
         <button type="button" class="btn btn-primary btn-sm" disabled>{{jar.jar_name}}</button>
+        <form action ="/delete" method = "post">
+            <input name = "id" type = "hidden" value="{{jar.id}}">
+            <button type = "submit">Delete</button>
+        </form>
         {% endfor %}
-        <button type="button" class="btn btn-primary btn-sm" name = "add">+</button>
+        
     </div>
+    <div class = "card">
+        <h3>Add a Jar</h3>
+        <form action = "/add" method="post">
+            <input autocomplete="off" name = "name" placeholder = "Jar name" type = "text">
+            <button type="button" class="btn btn-primary btn-sm" name = "add">+</button>
+        </form>
 {% endblock %}

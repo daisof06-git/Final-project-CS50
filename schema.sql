@@ -9,8 +9,7 @@ CREATE UNIQUE INDEX username ON users (username);
 CREATE TABLE jars(
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     user_id INTEGER NOT NULL,
-    jar_name TEXT NOT NULL,
-    income BOOLEAN DEFAULT FALSE, 
+    jar_name TEXT NOT NULL, 
     amount NUMERIC, 
     FOREIGN KEY(user_id) REFERENCES users(id));
 
