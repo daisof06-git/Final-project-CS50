@@ -130,6 +130,12 @@ def index():
         balance = float(balance)
     except (ValueError, TypeError): 
         balance = 0
+
+    #check savings
+    try: 
+        savings = float(savings)
+    except (ValueError, TypeError): 
+        savings = 0
     
     return render_template("index.html", jars = jars, balance = balance, savings = savings)
 
@@ -179,6 +185,16 @@ def budget():
         new_balance = balance - amount 
         db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
 
+        #update movements
+        jar_id = db.execute("SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar)[0]["id"]
+        try: 
+            jar_id = int(jar_id)
+        except ValueError: 
+            flash("There has been a problem!")
+            redirect("/")
+
+        db.execute("INSERT INTO movements (user_id, jar_id, amount) VALUES (?,?,?)", id, jar_id, amount)
+
         flash("You have updated your jars successfully!", "success")
         return redirect("/")
 
@@ -197,6 +213,17 @@ def budget():
            db.execute("UPDATE users SET balance = ? WHERE id = ?", amount, id) 
         elif balance > 0:
             db.execute("UPDATE users SET balance = balance + ? WHERE id = ?", amount, id)
+
+        #update movements
+        jar_id = db.execute("SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar)[0]["id"]
+
+        try: 
+            jar_id = int(jar_id)
+        except ValueError: 
+            flash("There has been a problem!")
+            redirect("/")
+
+        db.execute("INSERT INTO movements (user_id, jar_id, amount) VALUES (?,?,?)", id, jar_id, -amount)
 
         flash("You have updated your jars successfully!", "success")
         return redirect("/")
@@ -332,6 +359,8 @@ def delete():
 @app.route("/stats", methods = ["GET", "POST"])
 @login_required
 def stats():
+    id = session["user_id"]
+    username = db.execute("SELECT * FROM users WHERE id = ?", id)
     if request.method == "GET": 
         return render_template("stats.html")
 

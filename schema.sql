@@ -18,9 +18,7 @@ CREATE TABLE movements(
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     user_id INTEGER NOT NULL,
     amount NUMERIC NOT NULL,
-    new_jar_id INTEGER NOT NULL, 
-    last_jar_id INTEGER NOT NULL,
+    jar_id INTEGER NOT NULL,
     date DATE NOT NULL DEFAULT CURRENT_DATE,
     FOREIGN KEY(user_id) REFERENCES users(id), 
-    FOREIGN KEY(new_jar_id) REFERENCES jars(id), 
-    FOREIGN KEY(last_jar_id) REFERENCES jars(id)); 
+    FOREIGN KEY(jar_id) REFERENCES jars(id));
