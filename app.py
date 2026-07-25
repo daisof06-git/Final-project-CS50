@@ -17,6 +17,9 @@ Session(app)
 # Configure CS50 Library to use SQLite database
 db = SQL("sqlite:///budget.db")
 
+# Custom filter
+app.jinja_env.filters["usd"] = usd
+
 @app.after_request
 def after_request(response):
     """Ensure responses aren't cached"""
@@ -25,26 +28,58 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
-@app.route("/", methods = ["GET", "POST"])
-@login_required
-def index():
-    id = session["user_id"]
-    jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
-    balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
 
-    #check balance
-    try: 
-        balance = float(balance)
-    except ValueError: 
-        balance = 0
-    
-    return render_template("index.html", jars = jars, balance = balance)
+@app.route("/register", methods = ["GET", "POST"])
+def register():
+    session.clear()
+
+    #get username, email, password and confirmation
+    username = request.form.get("username")
+    email = request.form.get("email")
+    password = request.form.get("password")
+    confirmation = request.form.get("confirmation")
+
+
+    if request.method == "POST":
+        #validate username
+        if not username:
+            flash("Must add a username", "error")
+            return render_template("register.html")
+
+        #validate password
+        if not password or not confirmation:
+            flash("Must add a password", "error")
+            return render_template("register.html")
+
+        #validate email
+        if not email: 
+            flash("Must add an email", "error")
+            return render_template("register.html")
+
+        #validate password = confirmation
+        if password != confirmation:
+            flash("Passwords don't match!", "error")
+            return render_template("register.html")
+
+        #generate password and account
+        try:
+            hashpas = generate_password_hash(password)
+            db.execute("INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
+            flash("You have successfully registered!", "success")
+            return redirect("/login")
+        except ValueError:
+            flash("Username or email already exists!", "error")
+            return render_template("register.html")
+
+    if request.method == "GET":
+        return render_template("register.html")
+
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
     #log user in
     # Forget any user_id
-    session.clear()
+    session.pop("user_id", None)
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
@@ -79,90 +114,25 @@ def login():
     else:
         return render_template("login.html")
 
-@app.route("/income", methods = ["GET", "POST"])
+
+@app.route("/", methods = ["GET", "POST"])
 @login_required
-def add_income():
-    if request.method == "POST": 
-        id = session["user_id"]
-    if request.method == "POST":
-        income = request.form.get("income")
+def index():
 
-        # Validate income
-        if not income:
-            flash("Must insert a positive amount", "error")
-            return redirect("/income")
-        try:
-            income = float(income)
-        except ValueError:
-            flash("Must insert a positive amount", "error")
-            return redirect("/income")
-        if income <= 0:
-            flash("Must insert a positive amount", "error")
-            return redirect("/income")
-
-        # get current balance
-        current_balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
-
-        # update balance
-        if not current_balance: 
-            new_balance = income
-        elif current_balance > 0:
-            new_balance = current_balance + income
-        db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
-        return redirect("/")
-    if request.method == "GET":
-        return render_template("income.html") 
-
-@app.route("/jars", methods =  ["GET", "POST"])
-@login_required
-def jars():
+    #get user id, jars, and balance
     id = session["user_id"]
     jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
-    if request.method == "GET" or request.method == "POST":
-        return render_template("jars.html", jars = jars)
+    balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
+    savings = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["savings"]
+
+    #check balance
+    try: 
+        balance = float(balance)
+    except (ValueError, TypeError): 
+        balance = 0
     
+    return render_template("index.html", jars = jars, balance = balance, savings = savings)
 
-@app.route("/logout", methods = ["GET", "POST"])
-@login_required
-def logout():
-    #log user out
-
-    # Forget any user_id
-    session.clear()
-
-    # Redirect user to login form
-    return redirect("/")
-
-@app.route("/register", methods = ["GET", "POST"])
-def register():
-    session.clear()
-    username = request.form.get("username")
-    email = request.form.get("email")
-    password = request.form.get("password")
-    confirmation = request.form.get("confirmation")
-    if request.method == "POST":
-        if not username:
-            flash("Must add a username", "error")
-            return render_template("register.html")
-        if not password or not confirmation:
-            flash("Must add a password", "error")
-            return render_template("register.html")
-        if not email: 
-            flash("Must add an email", "error")
-            return render_template("register.html")
-        if password != confirmation:
-            flash("Passwords don't match!", "error")
-            return render_template("register.html")
-        try:
-            hashpas = generate_password_hash(password)
-            db.execute("INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
-            flash("You have successfully registered!", "success")
-            return redirect("/login")
-        except ValueError:
-            flash("Username or email already exists!", "error")
-            return render_template("register.html")
-    if request.method == "GET":
-        return render_template("register.html")
 
 @app.route("/budget", methods = ["GET","POST"])
 @login_required
@@ -176,6 +146,11 @@ def budget():
     if not jar: 
         flash("Must select a jar!", "error")
         redirect("/") 
+
+    #check action
+    if not action:
+        flash("Must select an action!", "error")
+        redirect("/")
     
     #convert amount
     try: 
@@ -229,6 +204,93 @@ def budget():
         flash("Must insert a valid action", "error")
         return redirect("/")
 
+
+@app.route("/income", methods = ["GET", "POST"])
+@login_required
+def add_income():
+    if request.method == "POST": 
+        id = session["user_id"]
+        income = request.form.get("income")
+
+        # Validate income
+        if not income:
+            flash("Must insert a positive amount", "error")
+            return redirect("/income")
+        try:
+            income = float(income)
+        except ValueError:
+            flash("Must insert a positive amount", "error")
+            return redirect("/income")
+        if income <= 0:
+            flash("Must insert a positive amount", "error")
+            return redirect("/income")
+
+        # get current balance
+        current_balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
+
+        # update balance
+        if not current_balance: 
+            new_balance = income
+        elif current_balance > 0:
+            new_balance = current_balance + income
+        db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
+        return redirect("/")
+    if request.method == "GET":
+        return render_template("income.html") 
+
+
+@app.route("/savings", methods = ["GET", "POST"])
+@login_required
+def add_savings():
+    if request.method == "POST": 
+        id = session["user_id"]
+        savings = request.form.get("savings")
+
+        # Validate savings
+        if not savings:
+            flash("Must insert a positive amount", "error")
+            return redirect("/savings")
+        try:
+            savings = float(savings)
+        except ValueError:
+            flash("Must insert a positive amount", "error")
+            return redirect("/savings")
+        if savings <= 0:
+            flash("Must insert a positive amount", "error")
+            return redirect("/savings")
+
+        # get current balance
+        current_balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
+
+        #validate
+        if savings > current_balance: 
+            flash("Not enough money", "error")
+            return redirect("/savings")
+
+        # update savings and balance
+        if not current_balance: 
+            flash("Not enough money", "error")
+            return redirect("/savings")
+        elif current_balance > 0:
+            new_balance = current_balance - savings
+        db.execute("UPDATE users SET savings = ?, balance = ? WHERE id = ?", savings, new_balance, id)
+
+        flash("Savings succesfully updated!")
+        return redirect("/")
+
+    if request.method == "GET":
+        return render_template("income.html") 
+
+
+@app.route("/jars", methods =  ["GET", "POST"])
+@login_required
+def jars():
+    id = session["user_id"]
+    jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+    if request.method == "GET" or request.method == "POST":
+        return render_template("jars.html", jars = jars)
+
+
 @app.route("/add", methods = ["POST"])
 @login_required
 def add(): 
@@ -240,6 +302,19 @@ def add():
     db.execute("INSERT INTO jars (user_id, jar_name, amount) VALUES (?,?,0)", user_id, name)
     flash("Jar successfully added!", "success")
     return redirect("/jars")
+
+
+@app.route("/logout", methods = ["GET", "POST"])
+@login_required
+def logout():
+    #log user out
+
+    # Forget any user_id
+    session.clear()
+
+    # Redirect user to login form
+    return redirect("/")
+
 
 @app.route("/delete", methods =["POST"])
 @login_required

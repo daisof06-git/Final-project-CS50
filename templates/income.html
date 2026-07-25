@@ -12,7 +12,14 @@
             <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="income" placeholder="$0.00" type="text">
         </div>
         <button class="btn btn-primary" type="submit">Add your income</button>
-    </form>
+        </form>
+        <h3>How much do you plan to save?</h3>
+        <form action="/savings" method="post">
+        <div class="mb-3">
+            <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="savings" placeholder="Add your expected savings" type="text">
+        </div>
+        <button class="btn btn-primary" type="submit">Save</button>
+        </form>
     </div>
     
 {% endblock %}

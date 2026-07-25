@@ -3,6 +3,7 @@ CREATE TABLE users(
     username TEXT NOT NULL, 
     hash TEXT NOT NULL, 
     balance NUMERIC,
+    savings NUMERIC, 
     email TEXT UNIQUE NOT NULL);
 CREATE UNIQUE INDEX username ON users (username);
 

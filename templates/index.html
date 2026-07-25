@@ -10,7 +10,7 @@
             <div class = "col-lg-6">
                 <h2>Available income</h2>
                 <img src="/static/jar-empty.svg" class="img-fluid" name = "bgjar">
-                <p>Your remaining income is: {{balance}}</p>
+                <p>Your remaining income is: {{balance|usd}}</p>
             </div>
             <div class = "col-lg-6">
                 <div class = "card">
@@ -35,6 +35,25 @@
                         <button class="btn btn-primary" type="submit">Update</button>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div class = "container-fluid">
+        <h1>Your jars</h1>
+        <div class = "card">
+            <div class="d-flex flex-wrap gap-3">
+                {% for jar in jars %}
+                    <div class="d-flex flex-column align-items-center">
+                        <img src = "/static/jar-empty.svg" style = "max-width: 60%" name = "{{jar.jar_name}}" class = "align-middle">
+                        <p class = "mt-2">{{jar.jar_name}}</p>
+                        <p class = "mt-2">{{jar.amount|usd}}</p>
+                    </div>
+                {% endfor %}
+                    <div class="d-flex flex-column align-items-center">
+                        <img src = "/static/jar-empty.svg" style = "max-width: 60%" name = "savings" class = "align-middle">
+                        <p class = "mt-2">Savings</p>
+                        <p class = "mt-2">{{savings | usd}}</p>
+                    </div>
             </div>
         </div>
     </div>

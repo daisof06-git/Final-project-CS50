@@ -42,6 +42,13 @@ h2{
     padding: 20px; 
 }
 
+h3{
+    font-family: "Concert One", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    color: #a6290d;
+    padding: 20px; 
+}
 select{
     margin-bottom: 10px; 
 }
@@ -58,7 +65,13 @@ select{
     border-color: #b97a68;
 }
 
-.btn-primary:focus{
+.btn-primary:focus:active{
+    background-color:#fff5ee;
+    border-color: #b97a68;
+    color: #b97a68;
+}
+
+.btn-primary:active{
     background-color:#fff5ee;
     border-color: #b97a68;
     color: #b97a68;
@@ -74,10 +87,14 @@ select{
   color: #9e0303;
 }
 
+.card{
+    padding:10px;
+}
+
 .card-title{
    color: #9e0303; 
    padding: 10px;
-
+   margin: 20px;
 }
 
 .btn{
@@ -101,4 +118,8 @@ select{
 .jar {
     width: 100px;
     text-align: center;
+}
+
+img{
+    padding: 20px;
 }
