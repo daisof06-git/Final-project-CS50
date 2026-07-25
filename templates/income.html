@@ -5,10 +5,14 @@
 {% endblock %}
 
 {% block main %}
-    <form action="/income" method="post">
+    <div class="card">
+        <h2 class="card-title">Add your income</h2>
+        <form action="/income" method="post">
         <div class="mb-3">
             <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="income" placeholder="$0.00" type="text">
         </div>
         <button class="btn btn-primary" type="submit">Add your income</button>
     </form>
+    </div>
+    
 {% endblock %}

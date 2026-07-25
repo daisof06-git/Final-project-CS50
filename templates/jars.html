@@ -12,10 +12,11 @@
                 <div class="d-flex flex-wrap gap-3">
                     {% for jar in jars %}
                         <div class="d-flex flex-column align-items-center">
-                            <button type="button" class="btn btn-primary btn-sm" disabled>{{jar.jar_name}}</button>
+                            <img src = "/static/jar-empty.svg" style = "max-width: 60%" name = "{{jar.jar_name}}" class = "jar_display">
+                            <p class = "mt-2">{{jar.jar_name}}</p>
                             <form action ="/delete" method = "post">
                                 <input name = "id" type = "hidden" value="{{jar.id}}">
-                                <button type = "submit" class="btn btn-primary btn-sm">Delete</button>
+                                <button type = "submit" class="btn btn-danger btn-sm">Delete</button>
                             </form>
                         </div>
                 {% endfor %}
@@ -23,7 +24,7 @@
             </div>
             <div class="col-6 col-md-4">
                 <div class = "card">
-                    <h3>Add a Jar</h3>
+                    <h2 class="card-title">Add a Jar</h2>
                     <form action = "/add" method="post">
                         <input autocomplete="off" name = "name" placeholder = "Jar name" type = "text">
                         <button type="submit" class="btn btn-primary btn-sm" name = "add">+</button>

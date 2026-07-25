@@ -17,7 +17,21 @@ nav .nav-item{
     font-family: "Tuffy", sans-serif;
     font-weight: 700;
     font-style: normal;
+    color: #57342d;
+}
+
+p{
+    font-family: "Tuffy", sans-serif;
+    font-weight: 700;
+    font-style: normal;
+    color: #57342d;
+}
+h1{
+    font-family: "Concert One", sans-serif;
+    font-weight: 400;
+    font-style: normal;
     color: #a6290d;
+    margin-bottom: 30px; 
 }
 
 h2{
@@ -25,6 +39,7 @@ h2{
     font-weight: 400;
     font-style: normal;
     color: #a6290d;
+    padding: 20px; 
 }
 
 select{
@@ -50,7 +65,7 @@ select{
 }
 
 .alert.success {
-  background-color: #c2ff7d;
+  background-color: #6fa675;
   color: #06521b;
 }
 
@@ -61,6 +76,8 @@ select{
 
 .card-title{
    color: #9e0303; 
+   padding: 10px;
+
 }
 
 .btn{
@@ -70,7 +87,18 @@ select{
     border-radius: 10px;
 }
 
+.btn:hover{
+    background-color:#b97a68;
+    border-color: #b97a68;
+}
+
+.btn:focus{
+    background-color:#fff5ee;
+    border-color: #b97a68;
+    color: #b97a68;
+}
+
 .jar {
-    width: 150px;
+    width: 100px;
     text-align: center;
 }

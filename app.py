@@ -30,7 +30,15 @@ def after_request(response):
 def index():
     id = session["user_id"]
     jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
-    return render_template("index.html", jars = jars)
+    balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
+
+    #check balance
+    try: 
+        balance = float(balance)
+    except ValueError: 
+        balance = 0
+    
+    return render_template("index.html", jars = jars, balance = balance)
 
 @app.route("/login", methods = ["GET", "POST"])
 def login():
@@ -156,19 +164,25 @@ def register():
     if request.method == "GET":
         return render_template("register.html")
 
-@app.route("/budget", methods = ["POST"])
+@app.route("/budget", methods = ["GET","POST"])
 @login_required
 def budget():
     id = session["user_id"]
     jar = request.form.get("jar")
     action = request.form.get("action")
     amount = request.form.get("amount")
+    
+    #check jar
+    if not jar: 
+        flash("Must select a jar!", "error")
+        redirect("/") 
+    
     #convert amount
     try: 
         amount = float(amount)
     except ValueError: 
         flash("Must insert a positive amount", "error")
-        return redirect("/budget")
+        return redirect("/")
 
     balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
 
@@ -181,7 +195,7 @@ def budget():
         #check balance
         if balance < amount: 
             flash("Not enough money!", "error")
-            return redirect("/budget")
+            return redirect("/")
 
         #update jar
         db.execute("UPDATE jars SET amount = amount + ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
@@ -191,14 +205,14 @@ def budget():
         db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
 
         flash("You have updated your jars successfully!", "success")
-        return render_template("index.html")
+        return redirect("/")
 
     elif action == "Extract":
         #check jar_balance
         jar_bal = db.execute("SELECT * FROM jars WHERE jar_name = ?", jar)[0]["amount"]
         if jar_bal < amount: 
             flash("Not enough money in jar!", "error")
-            return redirect("/budget")
+            return redirect("/")
 
         #update jar
         db.execute("UPDATE jars SET amount = amount - ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
@@ -210,17 +224,16 @@ def budget():
             db.execute("UPDATE users SET balance = balance + ? WHERE id = ?", amount, id)
 
         flash("You have updated your jars successfully!", "success")
-        return render_template("index.html")
+        return redirect("/")
     else: 
         flash("Must insert a valid action", "error")
-        return redirect("/budget")
+        return redirect("/")
 
 @app.route("/add", methods = ["POST"])
 @login_required
 def add(): 
     user_id = session["user_id"]
     name = request.form.get("name")
-    jars = db.execute("SELECT * FROM jars WHERE user_id = ?", user_id)
     if not name: 
         flash("Must add a name!", "error")
         return redirect("/jars")
