@@ -122,7 +122,7 @@ def index():
     #get user id
     id = session["user_id"]
 
-    #get month
+    #get month and year
     year_month = date.today().strftime('%Y-%m')
 
     #get and validate income
@@ -159,7 +159,25 @@ def actualjars():
     jar = request.form.get("jar")
     action = request.form.get("action")
     amount = request.form.get("amount")
+
+    #get month and year
+    year_month = date.today().strftime('%Y-%m')
     
+    #get and validate income
+    income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]        
+    income = float(income or 0)
+    
+    #get and validate savings
+    savings = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+    savings = float(savings or 0)
+    
+    #get jars total amount
+    jars_total = db.execute( "SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?",id, year_month)[0]["total"]        
+    jars_total = float(jars_total or 0)
+    
+    #get remaining income
+    balance = income - savings - jars_total
+
     #check jar
     if not jar: 
         flash("Must select a jar!", "error")
@@ -177,65 +195,37 @@ def actualjars():
         flash("Must insert a positive amount", "error")
         return redirect("/")
 
-    balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
-
-    #convert balance if necessary
+    jar_id = db.execute("SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar)[0]["id"]
     try: 
-        balance = float(balance)
+        jar_id = int(jar_id)
     except ValueError: 
-        balance = 0
+        flash("There has been a problem!")
+        redirect("/")
+
+    #if money is added to the jar
     if action == "Add":
         #check balance
         if balance < amount: 
             flash("Not enough money!", "error")
             return redirect("/")
 
-        #update jar
-        db.execute("UPDATE jars SET amount = amount + ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
-
-        #update users
-        new_balance = balance - amount 
-        db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
-
-        #update movements
-        jar_id = db.execute("SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar)[0]["id"]
-        try: 
-            jar_id = int(jar_id)
-        except ValueError: 
-            flash("There has been a problem!")
-            redirect("/")
-
-        db.execute("INSERT INTO movements (user_id, jar_id, amount) VALUES (?,?,?)", id, jar_id, amount)
-
+        #update jar movements
+        db.execute("INSERT INTO movements (user_id, amount, type, jar_id) VALUES (?,?,?,?)", id, amount, 'jar', jar_id)
+        
         flash("You have updated your jars successfully!", "success")
         return redirect("/")
 
     elif action == "Extract":
         #check jar_balance
-        jar_bal = db.execute("SELECT * FROM jars WHERE jar_name = ?", jar)[0]["amount"]
+        jar_bal = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND jar_id = ? AND AND strftime('%Y-%m', date) = ?", id, jar_id, year_month)[0]["total"]
+        jar_bal = float(jar_bal or 0)
+
         if jar_bal < amount: 
             flash("Not enough money in jar!", "error")
             return redirect("/")
 
-        #update jar
-        db.execute("UPDATE jars SET amount = amount - ? WHERE user_id = ? AND jar_name = ?", amount, id, jar)
-
-        #update balance
-        if balance == 0: 
-           db.execute("UPDATE users SET balance = ? WHERE id = ?", amount, id) 
-        elif balance > 0:
-            db.execute("UPDATE users SET balance = balance + ? WHERE id = ?", amount, id)
-
         #update movements
-        jar_id = db.execute("SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar)[0]["id"]
-
-        try: 
-            jar_id = int(jar_id)
-        except ValueError: 
-            flash("There has been a problem!", "error")
-            redirect("/")
-
-        db.execute("INSERT INTO movements (user_id, jar_id, amount) VALUES (?,?,?)", id, jar_id, -amount)
+        db.execute("INSERT INTO movements(user_id, jar_id, amount, type) VALUES (?,?,?,?)", id, jar_id, -amount, 'jar')
 
         flash("You have updated your jars successfully!", "success")
         return redirect("/")
