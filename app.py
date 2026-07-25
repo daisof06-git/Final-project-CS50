@@ -5,6 +5,7 @@ from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import login_required, usd
+from datetime import date
 
 # Configure application
 app = Flask(__name__)
@@ -118,31 +119,42 @@ def login():
 @app.route("/", methods = ["GET", "POST"])
 @login_required
 def index():
-
-    #get user id, jars, and balance
+    #get user id
     id = session["user_id"]
-    jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
-    balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
-    savings = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["savings"]
 
-    #check balance
-    try: 
-        balance = float(balance)
-    except (ValueError, TypeError): 
-        balance = 0
+    #get month
+    year_month = date.today().strftime('%Y-%m')
 
-    #check savings
-    try: 
-        savings = float(savings)
-    except (ValueError, TypeError): 
-        savings = 0
-    
+    #get and validate income
+    income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+    income = float(income or 0)
+
+    #get and validate savings
+    savings = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+    savings = float(savings or 0)
+
+    #get jars total amount
+    jars_total = db.execute( "SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?",id, year_month)[0]["total"]
+    jars_total = float(jars_total or 0)
+
+    #get remaining income
+    balance = income - savings - jars_total
+
+    # get user jars
+    user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+
+    jars = []
+    for jar in user_jars: 
+        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?", jar["id"], year_month)[0]["total"]
+        amount = float(amount or 0)
+        jars.append({"id": jar["id"], "jar_name": jar["name"], "amount": amount})
+
     return render_template("index.html", jars = jars, balance = balance, savings = savings)
 
 
-@app.route("/budget", methods = ["GET","POST"])
+@app.route("/actual", methods = ["GET","POST"])
 @login_required
-def budget():
+def actualjars():
     id = session["user_id"]
     jar = request.form.get("jar")
     action = request.form.get("action")
@@ -220,7 +232,7 @@ def budget():
         try: 
             jar_id = int(jar_id)
         except ValueError: 
-            flash("There has been a problem!")
+            flash("There has been a problem!", "error")
             redirect("/")
 
         db.execute("INSERT INTO movements (user_id, jar_id, amount) VALUES (?,?,?)", id, jar_id, -amount)
@@ -302,7 +314,7 @@ def add_savings():
             new_balance = current_balance - savings
         db.execute("UPDATE users SET savings = ?, balance = ? WHERE id = ?", savings, new_balance, id)
 
-        flash("Savings succesfully updated!")
+        flash("Savings succesfully updated!", "success")
         return redirect("/")
 
     if request.method == "GET":
@@ -326,9 +338,38 @@ def add():
     if not name: 
         flash("Must add a name!", "error")
         return redirect("/jars")
-    db.execute("INSERT INTO jars (user_id, jar_name, amount) VALUES (?,?,0)", user_id, name)
+    db.execute("INSERT INTO jars (user_id, jar_name) VALUES (?,?)", user_id, name)
     flash("Jar successfully added!", "success")
     return redirect("/jars")
+
+
+@app.route("/budget", methods = ["GET", "POST"])
+@login_required
+def budget():
+    if request.method == "GET":
+        return render_template("budget.html")
+
+@app.route("/budget_income", methods = ["POST"])
+def budget_income():
+    if request.method == "POST": 
+        id = session["user_id"]
+        income = request.form.get("income")
+    
+        # Validate income
+        if not income:
+            flash("Must insert a positive amount", "error")
+            return redirect("/budget")
+        try:
+            income = float(income)
+        except ValueError:
+            flash("Must insert a positive amount", "error")
+            return redirect("/budget")
+        if income <= 0:
+            flash("Must insert a positive amount", "error")
+            return redirect("/budget")
+
+        #update expected income
+        db.execute("INSERT INTO budget (,,,) VALUES(???)")
 
 
 @app.route("/logout", methods = ["GET", "POST"])

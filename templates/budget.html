@@ -1,0 +1,21 @@
+{% extends layout.html %}
+
+{% block title %}
+    Budget
+{% endblock %}
+
+{% block main %}
+    <div class = "card">
+        <h1 class = "card-title">Create your Budget</h1>
+        <div class = "container-fluid">
+            <h2>Add your expected income</h2>
+            <form action = "budget_income">
+                <div class="mb-3">
+                    <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="income" placeholder="$0.00" type="text">
+                </div>
+                <button class="btn btn-primary" type="submit">Add your expected income</button>
+            </form>
+        </div>
+
+    </div>
+{% endblock %}
