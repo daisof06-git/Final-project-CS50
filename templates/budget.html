@@ -5,10 +5,15 @@
 {% endblock %}
 
 {% block main %}
-    <h1>Create your Budget</h1>
+    <h1>This is your budget</h1>
     <div class = "card">
+        
+    </div>
+    
+    <div class = "card">
+        <h1>Create your Budget</h1>
             <h2 class = "card-title">Add your expected income</h2>
-            <form action = "budget_income">
+            <form action = "budget_income" method ="post">
                 <div class="mb-3">
                     <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="income" placeholder="$0.00" type="text">
                 </div>
@@ -17,7 +22,7 @@
      </div>
      <div class = "card">
             <h2 class = "card-title">Add your expected savings</h2>
-            <form action = "biudget_savings">
+            <form action = "biudget_savings" method = "post">
                 <div class="mb-3">
                     <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="savings" placeholder="$0.00" type="text">
                 </div>
@@ -25,12 +30,23 @@
             </form>
      </div>
      <div class = "card">
-            <h2 class = "card-title">Add your expected jars</h2>
-            <form action = "/budget_jars">
-                <div class="mb-3">
-                    <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="jar_amount" placeholder="$0.00" type="text">
-                </div>
-                <button class="btn btn-primary" type="submit">Expected jar amounts</button>
-            </form>
-     </div>
+            <h2 class = "card-title">Add your expected jar amounts</h2>
+            <div class="d-flex flex-wrap gap-3">
+                {% for jar in jars %}
+                    <div class="d-flex flex-column align-items-center">
+                        <img src = "/static/jar-empty.svg" style = "max-width: 60%" name = "{{jar.jar_name}}" class = "align-middle">
+                        <p class = "mt-2">{{jar.jar_name}}</p>
+                        <p class = "mt-2"> Current = {{jar.amount}}</p>
+                        <form action = "/budget_jars" method = "post">
+                            <div class="mb-3">
+                                <input type="hidden" name="jar_name" value="{{jar.jar_name}}">
+                                <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="jar_amount" placeholder="$0.00" type="text">
+                            </div>
+                            <button class="btn btn-primary" type="submit">Add</button>
+                        </form>
+                    </div>
+                {% endfor %} 
+            </div>    
+        </div>  
+    </div>
 {% endblock %}

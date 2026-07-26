@@ -214,7 +214,7 @@ def actualjars():
 
     elif action == "Extract":
         #check jar_balance
-        jar_bal = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND jar_id = ? AND AND strftime('%Y-%m', date) = ?", id, jar_id, year_month)[0]["total"]
+        jar_bal = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND jar_id = ? AND strftime('%Y-%m', date) = ?", id, jar_id, year_month)[0]["total"]
         jar_bal = float(jar_bal or 0)
 
         if jar_bal < amount: 
@@ -328,7 +328,11 @@ def add():
     if not name: 
         flash("Must add a name!", "error")
         return redirect("/jars")
-    db.execute("INSERT INTO jars (user_id, jar_name) VALUES (?,?)", user_id, name)
+    try: 
+        db.execute("INSERT INTO jars (user_id, jar_name) VALUES (?,?)", user_id, name)
+    except ValueError:
+        flash("That jar already exists! User another name", "error")
+        redirect("/")
     flash("Jar successfully added!", "success")
     return redirect("/jars")
 
@@ -336,10 +340,20 @@ def add():
 @app.route("/budget", methods = ["GET", "POST"])
 @login_required
 def budget():
-    if request.method == "GET":
-        return render_template("budget.html")
-    if request.method == "POST":
-            return render_template("budget.html")
+    id = session["user_id"]
+
+    # get user jars
+    user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+
+    #create a list with all jars and amounts
+    jars = []
+    for jar in user_jars: 
+        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?", jar["id"], year_month)[0]["total"]
+        amount = float(amount or 0)
+        jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
+
+    if request.method == "GET" or request.method == "POST":
+        return render_template("budget.html", jars = jars)
 
 @app.route("/budget_income", methods = ["POST"])
 @login_required
@@ -412,6 +426,54 @@ def budget_savings():
             db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'savings'", savings)
             flash("Expected savings changed successfully!", "success")
             return redirect("/budget")
+
+
+@app.route("/budget_jars", methods = ["POST"])
+@login_required
+def budget_jars(): 
+    id = session["user_id"]
+    jar_name = request.form.get("jar_name")
+    amount = request.form.get("amount")
+    if request.method == "POST":
+        #check jar_name
+        if not jar_name: 
+            flash("There has been a problem!", "error")
+            redirect("/budget")
+        #check amount
+        try: 
+            amount = float(amount)
+        except ValueError or TypeError: 
+            flash("Must insert a valid amount", "error")
+            redirect("/budget")
+
+        if amount < 0: 
+            flash("Must insert a valid amount", "error")
+            redirect("/budget")
+
+        #get jar_id
+        jar_id = db.execute("SELECT id AS id FROM jars WHERE jar_name = ? AND user_id = ?", jar_name, id)[0]["id"]
+
+        #check
+        try:
+            int(jar_id)
+        except ValueError: 
+            flash("There has been a problem!", "erorr")
+            redirect("/budget")
+            
+        #find the jar value in db
+        last_amount = db.execute("SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id)
+        last_amount = float(last_amount or 0)
+
+        if last_amount == 0:
+            db.execute("INSERT INTO budget (user_id, amount, jar_id, type) VALUES (?,?,?,?)", id, amount, jar_id, 'jar')
+            flash("You have successfully budgeted your jar!", "success")
+            redirect("/budget")
+        if last_amount > 0:
+            db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'jar' AND jar_id = ?", amount, id, jar_id)
+            flash("You have successfully updated your jar budget!", "success")
+            redirect("/budget")
+
+
 
 
 @app.route("/logout", methods = ["GET", "POST"])
