@@ -21,6 +21,9 @@ db = SQL("sqlite:///budget.db")
 # Custom filter
 app.jinja_env.filters["usd"] = usd
 
+#get date
+year_month = date.today().strftime('%Y-%m')
+
 @app.after_request
 def after_request(response):
     """Ensure responses aren't cached"""
@@ -122,9 +125,6 @@ def index():
     #get user id
     id = session["user_id"]
 
-    #get month and year
-    year_month = date.today().strftime('%Y-%m')
-
     #get and validate income
     income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
     income = float(income or 0)
@@ -147,7 +147,7 @@ def index():
     for jar in user_jars: 
         amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?", jar["id"], year_month)[0]["total"]
         amount = float(amount or 0)
-        jars.append({"id": jar["id"], "jar_name": jar["name"], "amount": amount})
+        jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
 
     return render_template("index.html", jars = jars, balance = balance, savings = savings)
 
@@ -159,9 +159,6 @@ def actualjars():
     jar = request.form.get("jar")
     action = request.form.get("action")
     amount = request.form.get("amount")
-
-    #get month and year
-    year_month = date.today().strftime('%Y-%m')
     
     #get and validate income
     income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]        
@@ -254,19 +251,11 @@ def add_income():
             flash("Must insert a positive amount", "error")
             return redirect("/income")
 
-        # get current balance
-        current_balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
-
-        # update balance
-        if not current_balance: 
-            new_balance = income
-        elif current_balance > 0:
-            new_balance = current_balance + income
-        db.execute("UPDATE users SET balance = ? WHERE id = ?", new_balance, id)
+        #update balance
+        db.execute("INSERT INTO movements (user_id, type, amount) VALUES (?,?,?)", id,'income', income)
         return redirect("/")
     if request.method == "GET":
         return render_template("income.html") 
-
 
 @app.route("/savings", methods = ["GET", "POST"])
 @login_required
@@ -274,6 +263,21 @@ def add_savings():
     if request.method == "POST": 
         id = session["user_id"]
         savings = request.form.get("savings")
+
+        #get and validate income
+        income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+        income = float(income or 0)
+        
+        #get and validate savings
+        current_savings = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+        current_savings = float(savings or 0)
+        
+        #get jars total amount
+        jars_total = db.execute( "SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?",id, year_month)[0]["total"]
+        jars_total = float(jars_total or 0)
+        
+        #get remaining income
+        balance = income - current_savings - jars_total
 
         # Validate savings
         if not savings:
@@ -288,21 +292,17 @@ def add_savings():
             flash("Must insert a positive amount", "error")
             return redirect("/savings")
 
-        # get current balance
-        current_balance = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["balance"]
-
         #validate
-        if savings > current_balance: 
+        if savings > balance: 
             flash("Not enough money", "error")
             return redirect("/savings")
 
         # update savings and balance
-        if not current_balance: 
+        if not balance: 
             flash("Not enough money", "error")
             return redirect("/savings")
-        elif current_balance > 0:
-            new_balance = current_balance - savings
-        db.execute("UPDATE users SET savings = ?, balance = ? WHERE id = ?", savings, new_balance, id)
+        
+        db.execute("INSERT INTO movements (user_id, amount, type) VALUES (?,?,?)", id, savings, 'savings')
 
         flash("Savings succesfully updated!", "success")
         return redirect("/")
@@ -338,8 +338,11 @@ def add():
 def budget():
     if request.method == "GET":
         return render_template("budget.html")
+    if request.method == "POST":
+            return render_template("budget.html")
 
 @app.route("/budget_income", methods = ["POST"])
+@login_required
 def budget_income():
     if request.method == "POST": 
         id = session["user_id"]
@@ -357,9 +360,58 @@ def budget_income():
         if income <= 0:
             flash("Must insert a positive amount", "error")
             return redirect("/budget")
+        
+        #check if there's a value for income
+        current_income = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        current_income = float(current_income or 0)
 
-        #update expected income
-        db.execute("INSERT INTO budget (,,,) VALUES(???)")
+        if current_income == 0: 
+            #insert expected income
+            db.execute("INSERT INTO budget(user_id, type, amount) VALUES(?,?,?)", id, 'income', income)
+            flash("Expected income added successfully!", "success")
+            return redirect("/budget")
+        elif current_income > 0: 
+            #update income
+            db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'income'", income)
+            flash("Expected income changed successfully!", "success")
+            return redirect("/budget")
+
+
+@app.route("/budget_savings", methods = ["POST"])
+@login_required
+def budget_savings(): 
+    if request.method == "POST": 
+        id = session["user_id"]
+        savings = request.form.get("savings")
+    
+        # Validate savings
+        if not savings:
+            flash("Must insert a positive amount", "error")
+            return redirect("/budget")
+        try:
+            savings = float(savings)
+        except ValueError:
+            flash("Must insert a positive amount", "error")
+            return redirect("/budget")
+        if savings <= 0:
+            flash("Must insert a positive amount", "error")
+            return redirect("/budget")
+        
+        #check if there's a value for savings
+        current_savings = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+        current_savings = float(current_savings or 0)
+
+        if current_savings == 0: 
+            #insert expected savings
+            db.execute("INSERT INTO budget(user_id, type, amount) VALUES(?,?,?)", id, 'savings', savings)
+            flash("Expected savings added successfully!", "success")
+            return redirect("/budget")
+
+        elif current_savings > 0: 
+            #update savings
+            db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'savings'", savings)
+            flash("Expected savings changed successfully!", "success")
+            return redirect("/budget")
 
 
 @app.route("/logout", methods = ["GET", "POST"])

@@ -1,21 +1,36 @@
-{% extends layout.html %}
+{% extends "layout.html" %}
 
 {% block title %}
     Budget
 {% endblock %}
 
 {% block main %}
+    <h1>Create your Budget</h1>
     <div class = "card">
-        <h1 class = "card-title">Create your Budget</h1>
-        <div class = "container-fluid">
-            <h2>Add your expected income</h2>
+            <h2 class = "card-title">Add your expected income</h2>
             <form action = "budget_income">
                 <div class="mb-3">
                     <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="income" placeholder="$0.00" type="text">
                 </div>
-                <button class="btn btn-primary" type="submit">Add your expected income</button>
+                <button class="btn btn-primary" type="submit">Expected income</button>
             </form>
-        </div>
-
-    </div>
+     </div>
+     <div class = "card">
+            <h2 class = "card-title">Add your expected savings</h2>
+            <form action = "biudget_savings">
+                <div class="mb-3">
+                    <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="savings" placeholder="$0.00" type="text">
+                </div>
+                <button class="btn btn-primary" type="submit">Expected savings</button>
+            </form>
+     </div>
+     <div class = "card">
+            <h2 class = "card-title">Add your expected jars</h2>
+            <form action = "/budget_jars">
+                <div class="mb-3">
+                    <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="jar_amount" placeholder="$0.00" type="text">
+                </div>
+                <button class="btn btn-primary" type="submit">Expected jar amounts</button>
+            </form>
+     </div>
 {% endblock %}
