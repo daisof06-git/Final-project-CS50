@@ -342,18 +342,26 @@ def add():
 def budget():
     id = session["user_id"]
 
+    # get current savings
+    current_savings = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+    current_savings = float(current_savings or 0)
+
+    #get current income
+    current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+    current_income= float(current_income or 0)
+
     # get user jars
     user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
 
     #create a list with all jars and amounts
     jars = []
     for jar in user_jars: 
-        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?", jar["id"], year_month)[0]["total"]
+        amount = db.execute("SELECT amount AS total FROM budget WHERE jar_id = ? AND type = 'jar'", jar["id"])[0]["total"]
         amount = float(amount or 0)
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
 
     if request.method == "GET" or request.method == "POST":
-        return render_template("budget.html", jars = jars)
+        return render_template("budget.html", jars = jars, current_savings = current_savings, current_income = current_income)
 
 @app.route("/budget_income", methods = ["POST"])
 @login_required
@@ -400,20 +408,34 @@ def budget_savings():
     
         # Validate savings
         if not savings:
-            flash("Must insert a positive amount", "error")
+            flash("Must insert a valid amount", "error")
             return redirect("/budget")
         try:
             savings = float(savings)
         except ValueError:
-            flash("Must insert a positive amount", "error")
+            flash("Must insert a valid amount", "error")
             return redirect("/budget")
-        if savings <= 0:
-            flash("Must insert a positive amount", "error")
+        
+        if savings < 0:
+            flash("Must insert a valid amount", "error")
             return redirect("/budget")
         
         #check if there's a value for savings
         current_savings = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
         current_savings = float(current_savings or 0)
+
+        #compare with budgeted balance
+        current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        current_income = float(current_income or 0)
+
+        total_jars = db.execute("SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id)[0]["total"]
+        total_jars = float(total_jars or 0)
+
+        current_balance = current_income - current_savings - total_jars
+
+        if savings > current_balance: 
+            flash("You wouldn't have enough money to save that amount!", "error")
+            redirect("/budget")
 
         if current_savings == 0: 
             #insert expected savings

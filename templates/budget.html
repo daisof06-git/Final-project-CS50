@@ -7,6 +7,11 @@
 {% block main %}
     <h1>This is your budget</h1>
     <div class = "card">
+        <p>Income = {{current_income | usd}}</p>
+        <p>Savings = {{current_savings | usd}}</p>
+        {{% for jar in jars %}}
+        <p>{{jar.jar_name}} = {{jar.amount | usd}}</p>
+        {{% endfor %}}
         
     </div>
     
@@ -22,7 +27,7 @@
      </div>
      <div class = "card">
             <h2 class = "card-title">Add your expected savings</h2>
-            <form action = "biudget_savings" method = "post">
+            <form action = "budget_savings" method = "post">
                 <div class="mb-3">
                     <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name ="savings" placeholder="$0.00" type="text">
                 </div>
@@ -36,7 +41,6 @@
                     <div class="d-flex flex-column align-items-center">
                         <img src = "/static/jar-empty.svg" style = "max-width: 60%" name = "{{jar.jar_name}}" class = "align-middle">
                         <p class = "mt-2">{{jar.jar_name}}</p>
-                        <p class = "mt-2"> Current = {{jar.amount}}</p>
                         <form action = "/budget_jars" method = "post">
                             <div class="mb-3">
                                 <input type="hidden" name="jar_name" value="{{jar.jar_name}}">
