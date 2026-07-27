@@ -178,12 +178,12 @@ def actualjars():
     #check jar
     if not jar: 
         flash("Must select a jar!", "error")
-        redirect("/") 
+        return redirect("/") 
 
     #check action
     if not action:
         flash("Must select an action!", "error")
-        redirect("/")
+        return redirect("/")
     
     #convert amount
     try: 
@@ -197,7 +197,7 @@ def actualjars():
         jar_id = int(jar_id)
     except ValueError: 
         flash("There has been a problem!")
-        redirect("/")
+        return redirect("/")
 
     #if money is added to the jar
     if action == "Add":
