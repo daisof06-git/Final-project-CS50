@@ -28,7 +28,7 @@ CREATE TABLE movements(
 CREATE TABLE budget(
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     user_id INTEGER NOT NULL,
-    amount NUMERIC NOT NULL,
+    amount NUMERIC,
     jar_id INTEGER,
     type TEXT NOT NULL CHECK((type = 'jar' AND jar_id IS NOT NULL) OR
     (type IN ('income','savings') AND jar_id IS NULL)), 

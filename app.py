@@ -253,7 +253,8 @@ def add_income():
 
         #update balance
         db.execute("INSERT INTO movements (user_id, type, amount) VALUES (?,?,?)", id,'income', income)
-        return redirect("/")
+        flash("You have successfully updated your income!", "success")
+        return redirect("/income")
     if request.method == "GET":
         return render_template("income.html") 
 
@@ -305,7 +306,7 @@ def add_savings():
         db.execute("INSERT INTO movements (user_id, amount, type) VALUES (?,?,?)", id, savings, 'savings')
 
         flash("Savings succesfully updated!", "success")
-        return redirect("/")
+        return redirect("/income")
 
     if request.method == "GET":
         return render_template("income.html") 
@@ -342,12 +343,18 @@ def add():
 def budget():
     id = session["user_id"]
 
-    # get current savings
-    current_savings = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+    #get current savings
+    try:
+        current_savings = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+    except IndexError:
+        current_savings = 0
     current_savings = float(current_savings or 0)
 
     #get current income
-    current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+    try:
+        current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+    except IndexError:
+        current_income = 0
     current_income= float(current_income or 0)
 
     # get user jars
@@ -356,7 +363,10 @@ def budget():
     #create a list with all jars and amounts
     jars = []
     for jar in user_jars: 
-        amount = db.execute("SELECT amount AS total FROM budget WHERE jar_id = ? AND type = 'jar'", jar["id"])[0]["total"]
+        try:
+            amount = db.execute("SELECT amount AS total FROM budget WHERE jar_id = ? AND type = 'jar'", jar["id"])[0]["total"]
+        except IndexError: 
+            amount = 0
         amount = float(amount or 0)
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
 
@@ -384,7 +394,10 @@ def budget_income():
             return redirect("/budget")
         
         #check if there's a value for income
-        current_income = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        try:
+            current_income = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        except IndexError:
+            current_income = 0
         current_income = float(current_income or 0)
 
         if current_income == 0: 
@@ -421,21 +434,30 @@ def budget_savings():
             return redirect("/budget")
         
         #check if there's a value for savings
-        current_savings = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+        try:
+            current_savings = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+        except IndexError:
+            current_savings = 0
         current_savings = float(current_savings or 0)
 
         #compare with budgeted balance
-        current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        try:
+            current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        except IndexError:
+            current_income = 0
         current_income = float(current_income or 0)
 
-        total_jars = db.execute("SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id)[0]["total"]
+        try: 
+            total_jars = db.execute("SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id)[0]["total"]
+        except IndexError:
+            total_jars = 0
         total_jars = float(total_jars or 0)
 
         current_balance = current_income - current_savings - total_jars
 
         if savings > current_balance: 
             flash("You wouldn't have enough money to save that amount!", "error")
-            redirect("/budget")
+            return redirect("/budget")
 
         if current_savings == 0: 
             #insert expected savings
@@ -455,47 +477,80 @@ def budget_savings():
 def budget_jars(): 
     id = session["user_id"]
     jar_name = request.form.get("jar_name")
-    amount = request.form.get("amount")
+    amount = request.form.get("jar_amount")
     if request.method == "POST":
         #check jar_name
         if not jar_name: 
             flash("There has been a problem!", "error")
-            redirect("/budget")
+            return redirect("/budget")
+
         #check amount
         try: 
             amount = float(amount)
-        except ValueError or TypeError: 
+        except (ValueError, TypeError): 
             flash("Must insert a valid amount", "error")
-            redirect("/budget")
+            return redirect("/budget")
 
+        amount = float(amount or 0)
+        
         if amount < 0: 
             flash("Must insert a valid amount", "error")
-            redirect("/budget")
+            return redirect("/budget")
+
+
+        #check if there's a value for savings
+        try:
+            current_savings = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+        except IndexError:
+            current_savings = 0
+        current_savings = float(current_savings or 0)
+
+        #check if there's a value for income
+        try:
+            current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        except IndexError:
+            current_income = 0
+        current_income = float(current_income or 0)
+
+        #get total jars value
+        try: 
+            total_jars = db.execute("SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id)[0]["total"]
+        except IndexError:
+            total_jars = 0
+        total_jars = float(total_jars or 0)
+
+        current_balance = current_income - current_savings - total_jars
+
+        #compare with budgeted balance
+        if amount > current_balance: 
+            flash("You wouldn't have enough money to spend that amount!", "error")
+            return redirect("/budget")
 
         #get jar_id
         jar_id = db.execute("SELECT id AS id FROM jars WHERE jar_name = ? AND user_id = ?", jar_name, id)[0]["id"]
-
         #check
         try:
             int(jar_id)
         except ValueError: 
             flash("There has been a problem!", "erorr")
-            redirect("/budget")
-            
-        #find the jar value in db
-        last_amount = db.execute("SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id)
+            return redirect("/budget")
+
+         #find the jar value in db
+        try:
+            last_amount = db.execute("SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id)[0]["amount"]
+        except IndexError:
+            last_amount = 0
         last_amount = float(last_amount or 0)
 
-        if last_amount == 0:
-            db.execute("INSERT INTO budget (user_id, amount, jar_id, type) VALUES (?,?,?,?)", id, amount, jar_id, 'jar')
-            flash("You have successfully budgeted your jar!", "success")
-            redirect("/budget")
-        if last_amount > 0:
+        if last_amount:
             db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'jar' AND jar_id = ?", amount, id, jar_id)
             flash("You have successfully updated your jar budget!", "success")
-            redirect("/budget")
-
-
+            return redirect("/budget")
+        else:
+            db.execute("INSERT INTO budget (user_id, amount, jar_id, type) VALUES (?,?,?,?)", id, amount, jar_id, 'jar')
+            flash("You have successfully budgeted your jar!", "success")
+            return redirect("/budget")
+        
 
 
 @app.route("/logout", methods = ["GET", "POST"])
