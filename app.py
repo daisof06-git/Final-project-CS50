@@ -70,7 +70,8 @@ def register():
         #generate password and account
         try:
             hashpas = generate_password_hash(password)
-            db.execute("INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
+            db.execute(
+                "INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
             flash("You have successfully registered!", "success")
             return redirect("/login")
         except ValueError:
@@ -128,15 +129,30 @@ def index():
     id = session["user_id"]
 
     #get and validate income
-    income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+    income = db.execute("""
+    SELECT SUM(amount) 
+    AS total 
+    FROM movements 
+    WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
+    """, id, year_month)[0]["total"]
     income = float(income or 0)
 
     #get and validate savings
-    savings = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+    savings = db.execute("""
+    SELECT SUM(amount) 
+    AS total 
+    FROM movements 
+    WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
+    """, id, year_month)[0]["total"]
     savings = float(savings or 0)
 
     #get jars total amount
-    jars_total = db.execute( "SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?",id, year_month)[0]["total"]
+    jars_total = db.execute("""
+    SELECT SUM(amount) 
+    AS total 
+    FROM movements 
+    WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
+    """,id, year_month)[0]["total"]
     jars_total = float(jars_total or 0)
 
     #get remaining income
@@ -147,7 +163,12 @@ def index():
 
     jars = []
     for jar in user_jars: 
-        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?", jar["id"], year_month)[0]["total"]
+        amount = db.execute("""
+        SELECT SUM(amount)
+        AS total 
+        FROM movements 
+        WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
+        """, jar["id"], year_month)[0]["total"]
         amount = float(amount or 0)
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
 
@@ -163,15 +184,29 @@ def actualjars():
     amount = request.form.get("amount")
     
     #get and validate income
-    income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]        
+    income = db.execute("""
+    SELECT SUM(amount) 
+    AS total FROM movements 
+    WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
+    """, id, year_month)[0]["total"]        
     income = float(income or 0)
     
     #get and validate savings
-    savings = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+    savings = db.execute("""
+    SELECT SUM(amount) 
+    AS total 
+    FROM movements 
+    WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
+    """, id, year_month)[0]["total"]
     savings = float(savings or 0)
     
     #get jars total amount
-    jars_total = db.execute( "SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?",id, year_month)[0]["total"]        
+    jars_total = db.execute("""
+    SELECT SUM(amount)
+    AS total 
+    FROM movements 
+    WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
+    """,id, year_month)[0]["total"]        
     jars_total = float(jars_total or 0)
     
     #get remaining income
@@ -194,7 +229,9 @@ def actualjars():
         flash("Must insert a positive amount", "error")
         return redirect("/")
 
-    jar_id = db.execute("SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar)[0]["id"]
+    jar_id = db.execute(
+        "SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar
+        )[0]["id"]
     try: 
         jar_id = int(jar_id)
     except ValueError: 
@@ -209,14 +246,23 @@ def actualjars():
             return redirect("/")
 
         #update jar movements
-        db.execute("INSERT INTO movements (user_id, amount, type, jar_id) VALUES (?,?,?,?)", id, amount, 'jar', jar_id)
+        db.execute("""
+        INSERT 
+        INTO movements (user_id, amount, type, jar_id) 
+        VALUES (?,?,?,?)
+        """, id, amount, 'jar', jar_id)
         
         flash("You have updated your jars successfully!", "success")
         return redirect("/")
 
     elif action == "Extract":
         #check jar_balance
-        jar_bal = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND jar_id = ? AND strftime('%Y-%m', date) = ?", id, jar_id, year_month)[0]["total"]
+        jar_bal = db.execute("""
+        SELECT SUM(amount) 
+        AS total 
+        FROM movements 
+        WHERE user_id = ? AND jar_id = ? AND strftime('%Y-%m', date) = ?
+        """, id, jar_id, year_month)[0]["total"]
         jar_bal = float(jar_bal or 0)
 
         if jar_bal < amount: 
@@ -224,7 +270,11 @@ def actualjars():
             return redirect("/")
 
         #update movements
-        db.execute("INSERT INTO movements(user_id, jar_id, amount, type) VALUES (?,?,?,?)", id, jar_id, -amount, 'jar')
+        db.execute("""
+        INSERT
+        INTO movements(user_id, jar_id, amount, type) 
+        VALUES (?,?,?,?)
+        """, id, jar_id, -amount, 'jar')
 
         flash("You have updated your jars successfully!", "success")
         return redirect("/")
@@ -254,11 +304,16 @@ def add_income():
             return redirect("/income")
 
         #update balance
-        db.execute("INSERT INTO movements (user_id, type, amount) VALUES (?,?,?)", id,'income', income)
+        db.execute("""
+        INSERT 
+        INTO movements (user_id, type, amount) 
+        VALUES (?,?,?)
+        """, id,'income', income)
         flash("You have successfully updated your income!", "success")
         return redirect("/income")
     if request.method == "GET":
         return render_template("income.html") 
+
 
 @app.route("/savings", methods = ["GET", "POST"])
 @login_required
@@ -268,15 +323,29 @@ def add_savings():
         savings = request.form.get("savings")
 
         #get and validate income
-        income = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+        income = db.execute("""
+        SELECT SUM(amount) 
+        AS total 
+        FROM movements 
+        WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
+        """, id, year_month)[0]["total"]
         income = float(income or 0)
         
         #get and validate savings
-        current_savings = db.execute("SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?", id, year_month)[0]["total"]
+        current_savings = db.execute("""
+        SELECT SUM(amount) 
+        AS total 
+        FROM movements 
+        WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
+        """, id, year_month)[0]["total"]
         current_savings = float(savings or 0)
         
         #get jars total amount
-        jars_total = db.execute( "SELECT SUM(amount) AS total FROM movements WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?",id, year_month)[0]["total"]
+        jars_total = db.execute("""
+        SELECT SUM(amount) 
+        AS total FROM movements 
+        WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
+        """,id, year_month)[0]["total"]
         jars_total = float(jars_total or 0)
         
         #get remaining income
@@ -305,7 +374,11 @@ def add_savings():
             flash("Not enough money", "error")
             return redirect("/savings")
         
-        db.execute("INSERT INTO movements (user_id, amount, type) VALUES (?,?,?)", id, savings, 'savings')
+        db.execute("""
+        INSERT 
+        INTO movements (user_id, amount, type) 
+        VALUES (?,?,?)
+        """, id, savings, 'savings')
 
         flash("Savings succesfully updated!", "success")
         return redirect("/income")
@@ -322,13 +395,18 @@ def jars():
     if request.method == "GET" or request.method == "POST":
         return render_template("jars.html", jars = jars)
 
+
 @app.route("/delete", methods =["POST"])
 @login_required
 def delete():
     user_id = session["user_id"]
     id = request.form.get("id")
     if id: 
-        db.execute("DELETE from jars WHERE id = ? AND user_id = ?", id, user_id)
+        #delete from jars
+        db.execute("""
+        DELETE FROM jars 
+        WHERE id = ? AND user_id = ?
+        """, id, user_id)
         flash("Jar successfully deleted!", "success")
     else: 
         flash("There has been a problem!", "error")
@@ -343,7 +421,11 @@ def add():
         flash("Must add a name!", "error")
         return redirect("/jars")
     try: 
-        db.execute("INSERT INTO jars (user_id, jar_name) VALUES (?,?)", user_id, name)
+        db.execute("""
+        INSERT 
+        INTO jars (user_id, jar_name) 
+        VALUES (?,?)
+        """, user_id, name)
     except ValueError:
         flash("That jar already exists! User another name", "error")
         redirect("/")
@@ -358,26 +440,42 @@ def budget():
 
     #get current savings
     try:
-        current_savings = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+        current_savings = db.execute("""
+        SELECT amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'savings'
+        """, id)[0]["amount"]
     except IndexError:
         current_savings = 0
     current_savings = float(current_savings or 0)
 
     #get current income
     try:
-        current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        current_income = db.execute("""
+        SELECT amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'income'
+        """, id)[0]["amount"]
     except IndexError:
         current_income = 0
     current_income= float(current_income or 0)
 
     # get user jars
-    user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+    user_jars = db.execute("""
+    SELECT * 
+    FROM jars 
+    WHERE user_id = ?""", id)
 
     #create a list with all jars and amounts
     jars = []
     for jar in user_jars: 
         try:
-            amount = db.execute("SELECT amount AS total FROM budget WHERE jar_id = ? AND type = 'jar'", jar["id"])[0]["total"]
+            amount = db.execute("""
+            SELECT amount 
+            AS total 
+            FROM budget 
+            WHERE jar_id = ? AND type = 'jar'
+            """, jar["id"])[0]["total"]
         except IndexError: 
             amount = 0
         amount = float(amount or 0)
@@ -385,6 +483,7 @@ def budget():
 
     if request.method == "GET" or request.method == "POST":
         return render_template("budget.html", jars = jars, current_savings = current_savings, current_income = current_income)
+
 
 @app.route("/budget_income", methods = ["POST"])
 @login_required
@@ -408,19 +507,32 @@ def budget_income():
         
         #check if there's a value for income
         try:
-            current_income = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+            current_income = db.execute("""
+            SELECT amount 
+            AS amount 
+            FROM budget 
+            WHERE user_id = ? AND type = 'income'
+            """, id)[0]["amount"]
         except IndexError:
             current_income = 0
         current_income = float(current_income or 0)
 
         if current_income == 0: 
             #insert expected income
-            db.execute("INSERT INTO budget(user_id, type, amount) VALUES(?,?,?)", id, 'income', income)
+            db.execute("""
+            INSERT 
+            INTO budget(user_id, type, amount) 
+            VALUES(?,?,?)
+            """, id, 'income', income)
             flash("Expected income added successfully!", "success")
             return redirect("/budget")
         elif current_income > 0: 
             #update income
-            db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'income'", income)
+            db.execute("""
+            UPDATE budget 
+            SET amount = ? 
+            WHERE user_id = ? AND type = 'income'
+            """, income)
             flash("Expected income changed successfully!", "success")
             return redirect("/budget")
 
@@ -448,20 +560,34 @@ def budget_savings():
         
         #check if there's a value for savings
         try:
-            current_savings = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+            current_savings = db.execute("""
+            SELECT amount 
+            AS amount 
+            FROM budget 
+            WHERE user_id = ? AND type = 'savings'
+            """, id)[0]["amount"]
         except IndexError:
             current_savings = 0
         current_savings = float(current_savings or 0)
 
         #compare with budgeted balance
         try:
-            current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+            current_income = db.execute("""
+            SELECT amount 
+            FROM budget 
+            WHERE user_id = ? AND type = 'income'
+            """, id)[0]["amount"]
         except IndexError:
             current_income = 0
         current_income = float(current_income or 0)
 
         try: 
-            total_jars = db.execute("SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id)[0]["total"]
+            total_jars = db.execute("""
+            SELECT SUM(amount) 
+            AS total 
+            FROM budget 
+            WHERE user_id = ? AND type = 'jar'
+            """, id)[0]["total"]
         except IndexError:
             total_jars = 0
         total_jars = float(total_jars or 0)
@@ -474,13 +600,21 @@ def budget_savings():
 
         if current_savings == 0: 
             #insert expected savings
-            db.execute("INSERT INTO budget(user_id, type, amount) VALUES(?,?,?)", id, 'savings', savings)
+            db.execute("""
+            INSERT 
+            INTO budget(user_id, type, amount) 
+            VALUES(?,?,?)
+            """, id, 'savings', savings)
             flash("Expected savings added successfully!", "success")
             return redirect("/budget")
 
         elif current_savings > 0: 
             #update savings
-            db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'savings'", savings)
+            db.execute("""
+            UPDATE budget 
+            SET amount = ? 
+            WHERE user_id = ? AND type = 'savings'
+            """, savings)
             flash("Expected savings changed successfully!", "success")
             return redirect("/budget")
 
@@ -513,21 +647,27 @@ def budget_jars():
 
         #check if there's a value for savings
         try:
-            current_savings = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+            current_savings = db.execute(
+                "SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id
+                )[0]["amount"]
         except IndexError:
             current_savings = 0
         current_savings = float(current_savings or 0)
 
         #check if there's a value for income
         try:
-            current_income = db.execute("SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+            current_income = db.execute(
+                "SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id
+                )[0]["amount"]
         except IndexError:
             current_income = 0
         current_income = float(current_income or 0)
 
         #get total jars value
         try: 
-            total_jars = db.execute("SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id)[0]["total"]
+            total_jars = db.execute(
+                "SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id
+                )[0]["total"]
         except IndexError:
             total_jars = 0
         total_jars = float(total_jars or 0)
@@ -540,7 +680,9 @@ def budget_jars():
             return redirect("/budget")
 
         #get jar_id
-        jar_id = db.execute("SELECT id AS id FROM jars WHERE jar_name = ? AND user_id = ?", jar_name, id)[0]["id"]
+        jar_id = db.execute(
+            "SELECT id AS id FROM jars WHERE jar_name = ? AND user_id = ?", jar_name, id
+            )[0]["id"]
         #check
         try:
             int(jar_id)
@@ -550,17 +692,23 @@ def budget_jars():
 
          #find the jar value in db
         try:
-            last_amount = db.execute("SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id)[0]["amount"]
+            last_amount = db.execute(
+                "SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id
+                )[0]["amount"]
         except IndexError:
             last_amount = 0
         last_amount = float(last_amount or 0)
 
         if last_amount:
-            db.execute("UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'jar' AND jar_id = ?", amount, id, jar_id)
+            db.execute(
+                "UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'jar' AND jar_id = ?", amount, id, jar_id
+                )
             flash("You have successfully updated your jar budget!", "success")
             return redirect("/budget")
         else:
-            db.execute("INSERT INTO budget (user_id, amount, jar_id, type) VALUES (?,?,?,?)", id, amount, jar_id, 'jar')
+            db.execute(
+                "INSERT INTO budget (user_id, amount, jar_id, type) VALUES (?,?,?,?)", id, amount, jar_id, 'jar'
+                )
             flash("You have successfully budgeted your jar!", "success")
             return redirect("/budget")
         
@@ -582,20 +730,117 @@ def logout():
 def stats():
     id = session["user_id"]
     username = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["username"]
+
+    #actual
+    actual = {}
+    #actual income
+    try:
+        actual_inc = db.execute("""
+        SELECT SUM(amount) 
+        AS amount 
+        FROM movements 
+        WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
+        """, id, year_month)[0]["amount"]
+        actual_inc = float(actual_inc or 0)
+    except IndexError:
+        actual_inc = 0
+    actual["income"] = actual_inc
+
+    #actual savings
+    try:
+        actual_sav = db.execute("""
+        SELECT SUM(amount) 
+        AS amount 
+        FROM movements 
+        WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
+        """, id, year_month)[0]["amount"]
+        actual_sav = float(actual_sav or 0)
+    except IndexError:
+        actual_sav = 0
+    actual["savings"] = actual_sav
+
+    #actual jars
+    try:
+        actual_jar = db.execute("""
+        SELECT SUM(amount) 
+        AS total 
+        FROM movements 
+        WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
+        """, id, year_month)[0]["total"]
+        actual_jar= float(actual_jar or 0)
+    except IndexError:
+        actual_jar = 0
+    actual["jars"] = actual_jar
+
+    actual_bal = actual_inc - actual_sav - actual_jar
+    actual["balance"] = actual_bal
+
+    #budgeted
+    budget = {}
+    #budgeted income
+    try:
+        budget_inc = db.execute("""
+        SELECT amount 
+        AS amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'income'
+        """, id)[0]["amount"]
+        budget_inc = float(budget_inc or 0)
+    except IndexError:
+        budget_inc = 0
+    budget["income"] = budget_inc
+
+    #budgeted savings
+    try:
+        budget_sav = db.execute("""
+        SELECT amount 
+        AS amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'savings'
+        """, id)[0]["amount"]
+        budget_sav = float(budget_sav or 0)
+    except IndexError:
+        budget_sav = 0
+    budget["savings"] = budget_sav
+
+    #budgeted jars
+    try:
+        budget_jar = db.execute("""
+        SELECT SUM(amount) 
+        AS total 
+        FROM budget 
+        WHERE user_id = ? AND type = 'jar'
+        """, id)[0]["total"]
+        budget_jar= float(budget_jar or 0)
+    except IndexError:
+        budget_jar = 0
+    budget["jars"] = budget_jar
+
+    budget_bal = budget_inc - budget_sav - budget_jar
+    budget["balance"] = budget_bal
     if request.method == "GET": 
-        return render_template("stats.html", username = username)
+        return render_template("stats.html", username = username, actual=actual, budget = budget)
 
 @app.route("/api/jar_distribution", methods = ["GET", "POST"])
 @login_required
 def jar_dist():
     id = session["user_id"]
     # get user jars
-    user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+    user_jars = db.execute("""
+    SELECT * 
+    FROM jars 
+    WHERE user_id = ?
+    """, id)
 
     #create a list with all jars and amounts
     jars = []
     for jar in user_jars: 
-        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?", jar["id"], year_month)[0]["total"]
+        amount = db.execute("""
+        SELECT SUM(amount) 
+        AS total 
+        FROM movements 
+        WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
+        """, jar["id"], year_month)[0]["total"]
         amount = float(amount or 0)
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
         labels = [jar["jar_name"] for jar in jars]
@@ -604,25 +849,45 @@ def jar_dist():
   
 
 @app.route("/api/budgetvsactual", methods = ["GET", "POST"])
+@login_required
 def budgetvsactual():
     id = session["user_id"]
 
     # get user jars
-    user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+    user_jars = db.execute("""
+    SELECT * 
+    FROM jars 
+    WHERE user_id = ?
+    """, id)
 
     #create a list with all jars and actual amounts
     jars = []
     for jar in user_jars: 
-        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ? AND user_id = ?", jar["id"], year_month, id)[0]["total"]
+        amount = db.execute("""
+        SELECT SUM(amount) 
+        AS total 
+        FROM movements 
+        WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ? AND user_id = ?
+        """, jar["id"], year_month, id)[0]["total"]
         amount = float(amount or 0)
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
 
     #append income and savings
-    income = db.execute("SELECT SUM(amount) AS income FROM movements WHERE type = 'income' AND strftime('%Y-%m', date) = ? AND user_id = ?",year_month, id)[0]["income"]
+    income = db.execute("""
+    SELECT SUM(amount) 
+    AS income 
+    FROM movements 
+    WHERE type = 'income' AND strftime('%Y-%m', date) = ? AND user_id = ?
+    """,year_month, id)[0]["income"]
     income = float(income or 0)
     jars.append({"jar_name":"income", "amount": income})
 
-    savings = db.execute("SELECT SUM(amount) AS savings FROM movements WHERE type = 'savings' AND strftime('%Y-%m', date) = ? AND user_id = ?",year_month, id)[0]["savings"]
+    savings = db.execute("""
+    SELECT SUM(amount) 
+    AS savings 
+    FROM movements 
+    WHERE type = 'savings' AND strftime('%Y-%m', date) = ? AND user_id = ?
+    """,year_month, id)[0]["savings"]
     savings = float(savings or 0)
     jars.append({"jar_name":"savings", "amount": savings})
 
@@ -630,7 +895,12 @@ def budgetvsactual():
     budget = []
     for jar in user_jars: 
         try: 
-            budgeted = db.execute("SELECT amount AS amount FROM budget WHERE jar_id = ? AND type = 'jar' AND user_id = ?", jar["id"], id)[0]["amount"]
+            budgeted = db.execute("""
+            SELECT amount 
+            AS amount 
+            FROM budget 
+            WHERE jar_id = ? AND type = 'jar' AND user_id = ?
+            """, jar["id"], id)[0]["amount"]
             budgeted = float(budgeted or 0)
         except IndexError: 
             budgeted = 0
@@ -638,14 +908,24 @@ def budgetvsactual():
 
     #append income and savings
     try:
-        budgeted_inc = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        budgeted_inc = db.execute("""
+        SELECT amount 
+        AS amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'income'
+        """, id)[0]["amount"]
         budgeted_inc = float(budgeted_inc or 0)
     except IndexError:
         budgeted_inc = 0
     budget.append({"jar_name": "income", "amount": budgeted_inc})
 
     try: 
-        budgeted_sav = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+        budgeted_sav = db.execute("""
+        SELECT amount 
+        AS amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'savings'
+        """, id)[0]["amount"]
         budgeted_sav = float(budgeted_sav or 0)
     except IndexError: 
         budgeted_sav = 0
@@ -658,9 +938,37 @@ def budgetvsactual():
 
 
     return jsonify({"labels": labels, "actual": actual, "budget": budget})
-    
 
 
+@app.route("/api/monthlytrends", methods = ["GET", "POST"])
+@login_required
+def monthlytrends():
+    id = session["user_id"]
+
+    rows = db.execute("""
+    SELECT
+        strftime('%Y-%m', date) AS month,
+        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS income,
+        SUM(CASE WHEN type = 'savings' THEN amount ELSE 0 END) AS savings,
+        SUM(CASE WHEN type = 'jar' THEN amount ELSE 0 END) AS jars
+    FROM movements
+    WHERE user_id = ?
+    GROUP BY month
+    ORDER BY month
+    """, id)
+
+    labels = []
+    income = []
+    savings = []
+    jars = []
+
+    for row in rows:
+        labels.append(row["month"])
+        income.append(row["income"])
+        savings.append(row["savings"])
+        jars.append(row["jars"])
+
+    return jsonify({"labels": labels, "income": income, "savings": savings, "jars": jars})
 
 
 if __name__ == '__main__':

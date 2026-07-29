@@ -10,15 +10,47 @@
         <div class = "container">
             <div class = "row">
                 <div class = "col-sm">
-                    <h2>These are your current expenses</h2>
-                    <div class="chart-container">
-                        <canvas id="jarChart"></canvas>
+                    <div class="card">
+                        <h2 class="card-title">This is how it's going</h2>
+                        <p>Income: {{actual.income | usd}}</p>
+                        <p>Savings: {{actual.savings | usd}} </p>
+                        <p>Total Jars: {{actual.jars | usd}} </p>
+                        <p>Remains: {{actual.balance | usd}}</p>
                     </div>
                 </div>
+                <div class = "col-sm">
+                    <div class="card">
+                        <h2 class="card-title">This is what you budgeted</h2>
+                        <p>Income: {{budget.income | usd}}</p>
+                        <p>Savings: {{budget.savings | usd}} </p>
+                        <p>Total Jars: {{budget.jars | usd}} </p>
+                        <p>Remains: {{budget.balance | usd}}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class = "row">
+                <div class = "col-sm">
+                    <div class="card">
+                        <h2 class="card-title">These are your current expenses</h2>
+                        <div class="chart-container">
+                            <canvas id="jarChart"></canvas>
+                        </div>
+                    </div>
+                    
+                </div>
                 <div class="col-sm">
-                    <h2>Budget vs Actual</h2>
-                    <div class="chart-container">
-                        <canvas id="budgetvsactualChart"></canvas>
+                    <div class="card">
+                        <h2 class="card-title">Budget vs Actual</h2>
+                        <div class="chart-container">
+                            <canvas id="budgetvsactualChart"></canvas>
+                        </div>
+                    </div>
+                    <div class = "card">
+                        <h2>Monthly Trends</h2>
+                        <div class="chart-container">
+                            <canvas id = "MonthlyTrendChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -32,7 +64,7 @@
         fetch('/api/jar_distribution')
         .then(res=>{
             if (!res.ok){
-                throw new Error('HTTP ${res.status}');
+                throw new Error(`HTTP ${res.status}`);
             }
                 return res.json(); })
         
@@ -61,7 +93,7 @@
         fetch('/api/budgetvsactual')
         .then(res=>{
             if (!res.ok){
-                throw new Error('HTTP ${res.status}');
+                throw new Error(`HTTP ${res.status}`);
             }
             return res.json(); })
         
@@ -80,6 +112,40 @@
                     },
                     { label: "budget", data: budget, 
                         backgroundColor: "#b97a68"
+                    }
+                ]
+            }
+        });
+    })
+    .catch (error=> console.error('Error fetching revenue', error));
+
+    //Monthly trend
+    fetch('/api/monthlytrends')
+        .then(res=>{
+            if (!res.ok){
+                throw new Error(`HTTP ${res.status}`);
+            }
+            return res.json(); })
+        
+        .then(data=>{
+            const labels = data.labels
+            const income = data.income
+            const savings = data.savings
+            const jars = data.jars
+        
+        new Chart(document.getElementById("MonthlyTrendChart"),{
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
+                    {label:"income", data: income,
+                        backgroundColor: "#a21a44"
+                    },
+                    {label:"savings", data:savings,
+                        backgroundColor: "#852f68"
+                    },
+                    {label: "jars", data: jars,
+                        backgroundColor: "#5b4176"
                     }
                 ]
             }

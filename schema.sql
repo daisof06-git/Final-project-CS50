@@ -23,6 +23,7 @@ CREATE TABLE movements(
     date DATE NOT NULL DEFAULT CURRENT_DATE,
     FOREIGN KEY(user_id) REFERENCES users(id), 
     FOREIGN KEY(jar_id) REFERENCES jars(id) 
+    ON DELETE CASCADE
 );
 
 CREATE TABLE budget(
@@ -33,6 +34,7 @@ CREATE TABLE budget(
     type TEXT NOT NULL CHECK((type = 'jar' AND jar_id IS NOT NULL) OR
     (type IN ('income','savings') AND jar_id IS NULL)), 
     FOREIGN KEY(user_id) REFERENCES users(id), 
-    FOREIGN KEY(jar_id) REFERENCES jars(id),
+    FOREIGN KEY(jar_id) REFERENCES jars(id)
+    ON DELETE CASCADE,
     UNIQUE(user_id, jar_id, type)
 );
