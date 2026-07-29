@@ -1,11 +1,13 @@
 import os
 import sqlite3
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import login_required, usd
 from datetime import date
+
+
 
 # Configure application
 app = Flask(__name__)
@@ -320,6 +322,17 @@ def jars():
     if request.method == "GET" or request.method == "POST":
         return render_template("jars.html", jars = jars)
 
+@app.route("/delete", methods =["POST"])
+@login_required
+def delete():
+    user_id = session["user_id"]
+    id = request.form.get("id")
+    if id: 
+        db.execute("DELETE from jars WHERE id = ? AND user_id = ?", id, user_id)
+        flash("Jar successfully deleted!", "success")
+    else: 
+        flash("There has been a problem!", "error")
+    return redirect("/jars")
 
 @app.route("/add", methods = ["POST"])
 @login_required
@@ -552,7 +565,6 @@ def budget_jars():
             return redirect("/budget")
         
 
-
 @app.route("/logout", methods = ["GET", "POST"])
 @login_required
 def logout():
@@ -565,26 +577,90 @@ def logout():
     return redirect("/")
 
 
-@app.route("/delete", methods =["POST"])
-@login_required
-def delete():
-    user_id = session["user_id"]
-    id = request.form.get("id")
-    if id: 
-        db.execute("DELETE from jars WHERE id = ? AND user_id = ?", id, user_id)
-        flash("Jar successfully deleted!", "success")
-    else: 
-        flash("There has been a problem!", "error")
-    return redirect("/jars")
-    
-
 @app.route("/stats", methods = ["GET", "POST"])
 @login_required
 def stats():
     id = session["user_id"]
-    username = db.execute("SELECT * FROM users WHERE id = ?", id)
+    username = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["username"]
     if request.method == "GET": 
-        return render_template("stats.html")
+        return render_template("stats.html", username = username)
+
+@app.route("/api/jar_distribution", methods = ["GET", "POST"])
+@login_required
+def jar_dist():
+    id = session["user_id"]
+    # get user jars
+    user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+
+    #create a list with all jars and amounts
+    jars = []
+    for jar in user_jars: 
+        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?", jar["id"], year_month)[0]["total"]
+        amount = float(amount or 0)
+        jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
+        labels = [jar["jar_name"] for jar in jars]
+        values = [float(jar["amount"]) for jar in jars]
+    return jsonify({"labels":labels,"values":values })
+  
+
+@app.route("/api/budgetvsactual", methods = ["GET", "POST"])
+def budgetvsactual():
+    id = session["user_id"]
+
+    # get user jars
+    user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
+
+    #create a list with all jars and actual amounts
+    jars = []
+    for jar in user_jars: 
+        amount = db.execute("SELECT SUM(amount) AS total FROM movements WHERE jar_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ? AND user_id = ?", jar["id"], year_month, id)[0]["total"]
+        amount = float(amount or 0)
+        jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
+
+    #append income and savings
+    income = db.execute("SELECT SUM(amount) AS income FROM movements WHERE type = 'income' AND strftime('%Y-%m', date) = ? AND user_id = ?",year_month, id)[0]["income"]
+    income = float(income or 0)
+    jars.append({"jar_name":"income", "amount": income})
+
+    savings = db.execute("SELECT SUM(amount) AS savings FROM movements WHERE type = 'savings' AND strftime('%Y-%m', date) = ? AND user_id = ?",year_month, id)[0]["savings"]
+    savings = float(savings or 0)
+    jars.append({"jar_name":"savings", "amount": savings})
+
+    #create a list with budgeted amounts
+    budget = []
+    for jar in user_jars: 
+        try: 
+            budgeted = db.execute("SELECT amount AS amount FROM budget WHERE jar_id = ? AND type = 'jar' AND user_id = ?", jar["id"], id)[0]["amount"]
+            budgeted = float(budgeted or 0)
+        except IndexError: 
+            budgeted = 0
+        budget.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": budgeted})
+
+    #append income and savings
+    try:
+        budgeted_inc = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'income'", id)[0]["amount"]
+        budgeted_inc = float(budgeted_inc or 0)
+    except IndexError:
+        budgeted_inc = 0
+    budget.append({"jar_name": "income", "amount": budgeted_inc})
+
+    try: 
+        budgeted_sav = db.execute("SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id)[0]["amount"]
+        budgeted_sav = float(budgeted_sav or 0)
+    except IndexError: 
+        budgeted_sav = 0
+    budget.append({"jar_name": "savings", "amount": budgeted_sav})
+
+
+    labels = [jar["jar_name"] for jar in jars]
+    actual = [float(jar["amount"]) for jar in jars]
+    budget = [float(jar["amount"]) for jar in budget]
+
+
+    return jsonify({"labels": labels, "actual": actual, "budget": budget})
+    
+
+
 
 
 if __name__ == '__main__':

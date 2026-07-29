@@ -7,6 +7,84 @@
 {% block main %}
     <div class = "container-fluid">
         <h1> Hello {{username}}!</h1>
-        
+        <div class = "container">
+            <div class = "row">
+                <div class = "col-sm">
+                    <h2>These are your current expenses</h2>
+                    <div class="chart-container">
+                        <canvas id="jarChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-sm">
+                    <h2>Budget vs Actual</h2>
+                    <div class="chart-container">
+                        <canvas id="budgetvsactualChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <script>
+    const Palette = ['#a6290d','#b97a68','#a21a44', '#852f68', '#5b4176', '#582b39','#574240','#a86561'];
+    
+    //Donut chart
+        fetch('/api/jar_distribution')
+        .then(res=>{
+            if (!res.ok){
+                throw new Error('HTTP ${res.status}');
+            }
+                return res.json(); })
+        
+        .then(data=>{
+            const labels = data.labels
+            const values = data.values
+
+        new Chart(document.getElementById("jarChart"),{
+            type: "doughnut",
+            data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+            backgroundColor: function(context){
+                const dataIndex = context.dataIndex;
+
+                return Palette[dataIndex % Palette.length];
+            }
+            }]
+        }
+        });
+    })
+    .catch (error=> console.error('Error fetching revenue', error));
+
+    //Bar chart
+        fetch('/api/budgetvsactual')
+        .then(res=>{
+            if (!res.ok){
+                throw new Error('HTTP ${res.status}');
+            }
+            return res.json(); })
+        
+        .then(data=>{
+            const labels = data.labels
+            const actual = data.actual
+            const budget = data.budget
+        
+        new Chart(document.getElementById("budgetvsactualChart"),{
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: "actual", data: actual,
+                        backgroundColor: "#a6290d"
+                    },
+                    { label: "budget", data: budget, 
+                        backgroundColor: "#b97a68"
+                    }
+                ]
+            }
+        });
+    })
+    .catch (error=> console.error('Error fetching revenue', error));
+    </script>
 {% endblock %}

@@ -123,3 +123,9 @@ select{
 img{
     padding: 20px;
 }
+
+.chart-container {
+    width: 100%;
+    max-width: 450px;
+    margin: auto;
+}
