@@ -45,3 +45,26 @@ def get_month_summary(user_id, year_month = None):
         "jars_total": jars_total,
         "balance": balance,
     }
+
+def get_budget_summary(user_id):
+    row = db.execute("""
+        SELECT 
+            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS income,
+            SUM(CASE WHEN type = 'savings' THEN amount ELSE 0 END) AS savings,
+            SUM(CASE WHEN type = 'jar' THEN amount ELSE 0 END) AS jars_total
+        FROM budget
+        WHERE user_id = ?
+        """, user_id)[0]
+    
+    income = float(row["income"] or 0)
+    savings = float(row["savings"] or 0)
+    jars_total = float(row["jars_total"] or 0)
+    
+    balance = income - savings - jars_total
+
+    return{
+        "income": income,
+        "savings": savings,
+        "jars_total": jars_total,
+        "balance": balance,
+        }

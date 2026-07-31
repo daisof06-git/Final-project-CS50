@@ -4,7 +4,7 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import login_required, usd, get_month_summary
+from helpers import login_required, usd, get_month_summary, get_budget_summary
 from datetime import date
 
 
@@ -380,27 +380,9 @@ def add():
 def budget():
     id = session["user_id"]
 
-    #get current savings
-    try:
-        current_savings = db.execute("""
-        SELECT amount 
-        FROM budget 
-        WHERE user_id = ? AND type = 'savings'
-        """, id)[0]["amount"]
-    except IndexError:
-        current_savings = 0
-    current_savings = float(current_savings or 0)
-
-    #get current income
-    try:
-        current_income = db.execute("""
-        SELECT amount 
-        FROM budget 
-        WHERE user_id = ? AND type = 'income'
-        """, id)[0]["amount"]
-    except IndexError:
-        current_income = 0
-    current_income= float(current_income or 0)
+    budget = get_budget_summary(id)
+    current_savings = budget["savings"]
+    current_income = budget["income"]
 
     # get user jars
     user_jars = db.execute("""
@@ -433,6 +415,7 @@ def budget_income():
     if request.method == "POST": 
         id = session["user_id"]
         income = request.form.get("income")
+        budget = get_budget_summary(id)
     
         # Validate income
         if not income:
@@ -446,18 +429,9 @@ def budget_income():
         if income <= 0:
             flash("Must insert a positive amount", "error")
             return redirect("/budget")
-        
-        #check if there's a value for income
-        try:
-            current_income = db.execute("""
-            SELECT amount 
-            AS amount 
-            FROM budget 
-            WHERE user_id = ? AND type = 'income'
-            """, id)[0]["amount"]
-        except IndexError:
-            current_income = 0
-        current_income = float(current_income or 0)
+
+        #check if there's a current income
+        current_income = budget["income"]
 
         if current_income == 0: 
             #insert expected income
@@ -485,6 +459,7 @@ def budget_savings():
     if request.method == "POST": 
         id = session["user_id"]
         savings = request.form.get("savings")
+        budget = get_budget_summary(id)
     
         # Validate savings
         if not savings:
@@ -501,40 +476,10 @@ def budget_savings():
             return redirect("/budget")
         
         #check if there's a value for savings
-        try:
-            current_savings = db.execute("""
-            SELECT amount 
-            AS amount 
-            FROM budget 
-            WHERE user_id = ? AND type = 'savings'
-            """, id)[0]["amount"]
-        except IndexError:
-            current_savings = 0
-        current_savings = float(current_savings or 0)
+        current_savings = budget["savings"]
 
         #compare with budgeted balance
-        try:
-            current_income = db.execute("""
-            SELECT amount 
-            FROM budget 
-            WHERE user_id = ? AND type = 'income'
-            """, id)[0]["amount"]
-        except IndexError:
-            current_income = 0
-        current_income = float(current_income or 0)
-
-        try: 
-            total_jars = db.execute("""
-            SELECT SUM(amount) 
-            AS total 
-            FROM budget 
-            WHERE user_id = ? AND type = 'jar'
-            """, id)[0]["total"]
-        except IndexError:
-            total_jars = 0
-        total_jars = float(total_jars or 0)
-
-        current_balance = current_income - current_savings - total_jars
+        current_balance = budget["balance"]
 
         if savings > current_balance: 
             flash("You wouldn't have enough money to save that amount!", "error")
@@ -567,6 +512,8 @@ def budget_jars():
     id = session["user_id"]
     jar_name = request.form.get("jar_name")
     amount = request.form.get("jar_amount")
+    budget = get_budget_summary(id)
+
     if request.method == "POST":
         #check jar_name
         if not jar_name: 
@@ -586,35 +533,7 @@ def budget_jars():
             flash("Must insert a valid amount", "error")
             return redirect("/budget")
 
-
-        #check if there's a value for savings
-        try:
-            current_savings = db.execute(
-                "SELECT amount AS amount FROM budget WHERE user_id = ? AND type = 'savings'", id
-                )[0]["amount"]
-        except IndexError:
-            current_savings = 0
-        current_savings = float(current_savings or 0)
-
-        #check if there's a value for income
-        try:
-            current_income = db.execute(
-                "SELECT amount FROM budget WHERE user_id = ? AND type = 'income'", id
-                )[0]["amount"]
-        except IndexError:
-            current_income = 0
-        current_income = float(current_income or 0)
-
-        #get total jars value
-        try: 
-            total_jars = db.execute(
-                "SELECT SUM(amount) AS total FROM budget WHERE user_id = ? AND type = 'jar'", id
-                )[0]["total"]
-        except IndexError:
-            total_jars = 0
-        total_jars = float(total_jars or 0)
-
-        current_balance = current_income - current_savings - total_jars
+        current_balance = budget["balance"]
 
         #compare with budgeted balance
         if amount > current_balance: 
@@ -762,6 +681,8 @@ def jar_dist():
 @login_required
 def budgetvsactual():
     id = session["user_id"]
+    month_summary = get_month_summary(id)
+    budget_summary = get_budget_summary(id)
 
     # get user jars
     user_jars = db.execute("""
@@ -786,22 +707,10 @@ def budgetvsactual():
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
 
     #append income and savings
-    income = db.execute("""
-    SELECT SUM(amount) 
-    AS income 
-    FROM movements 
-    WHERE type = 'income' AND strftime('%Y-%m', date) = ? AND user_id = ?
-    """,year_month, id)[0]["income"]
-    income = float(income or 0)
+    income = month_summary["income"]
     jars.append({"jar_name":"income", "amount": income})
 
-    savings = db.execute("""
-    SELECT SUM(amount) 
-    AS savings 
-    FROM movements 
-    WHERE type = 'savings' AND strftime('%Y-%m', date) = ? AND user_id = ?
-    """,year_month, id)[0]["savings"]
-    savings = float(savings or 0)
+    savings = month_summary["savings"]
     jars.append({"jar_name":"savings", "amount": savings})
 
     #create a list with budgeted amounts
@@ -820,28 +729,10 @@ def budgetvsactual():
         budget.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": budgeted})
 
     #append income and savings
-    try:
-        budgeted_inc = db.execute("""
-        SELECT amount 
-        AS amount 
-        FROM budget 
-        WHERE user_id = ? AND type = 'income'
-        """, id)[0]["amount"]
-        budgeted_inc = float(budgeted_inc or 0)
-    except IndexError:
-        budgeted_inc = 0
+    budgeted_inc = budget_summary["income"]
     budget.append({"jar_name": "income", "amount": budgeted_inc})
 
-    try: 
-        budgeted_sav = db.execute("""
-        SELECT amount 
-        AS amount 
-        FROM budget 
-        WHERE user_id = ? AND type = 'savings'
-        """, id)[0]["amount"]
-        budgeted_sav = float(budgeted_sav or 0)
-    except IndexError: 
-        budgeted_sav = 0
+    budgeted_sav = budget_summary["savings"]
     budget.append({"jar_name": "savings", "amount": budgeted_sav})
 
 
