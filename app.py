@@ -481,7 +481,7 @@ def budget_savings():
         #compare with budgeted balance
         current_balance = budget["balance"]
 
-        if savings > current_balance: 
+        if savings > current_balance + current_savings: 
             flash("You wouldn't have enough money to save that amount!", "error")
             return redirect("/budget")
 
@@ -535,8 +535,17 @@ def budget_jars():
 
         current_balance = budget["balance"]
 
+         #find the jar value in db
+        try:
+            last_amount = db.execute(
+                "SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id
+                )[0]["amount"]
+        except IndexError:
+            last_amount = 0
+        last_amount = float(last_amount or 0)
+
         #compare with budgeted balance
-        if amount > current_balance: 
+        if amount > current_balance + last_amount: 
             flash("You wouldn't have enough money to spend that amount!", "error")
             return redirect("/budget")
 
@@ -551,14 +560,7 @@ def budget_jars():
             flash("There has been a problem!", "erorr")
             return redirect("/budget")
 
-         #find the jar value in db
-        try:
-            last_amount = db.execute(
-                "SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id
-                )[0]["amount"]
-        except IndexError:
-            last_amount = 0
-        last_amount = float(last_amount or 0)
+        
 
         if last_amount:
             db.execute(
@@ -672,8 +674,9 @@ def jar_dist():
         """, jar["id"], year_month)[0]["total"]
         amount = float(amount or 0)
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
-        labels = [jar["jar_name"] for jar in jars]
-        values = [float(jar["amount"]) for jar in jars]
+
+    labels = [jar["jar_name"] for jar in jars]
+    values = [float(jar["amount"]) for jar in jars]
     return jsonify({"labels":labels,"values":values })
   
 
@@ -681,8 +684,6 @@ def jar_dist():
 @login_required
 def budgetvsactual():
     id = session["user_id"]
-    month_summary = get_month_summary(id)
-    budget_summary = get_budget_summary(id)
 
     # get user jars
     user_jars = db.execute("""
@@ -706,13 +707,6 @@ def budgetvsactual():
         amount = float(amount or 0)
         jars.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": amount})
 
-    #append income and savings
-    income = month_summary["income"]
-    jars.append({"jar_name":"income", "amount": income})
-
-    savings = month_summary["savings"]
-    jars.append({"jar_name":"savings", "amount": savings})
-
     #create a list with budgeted amounts
     budget = []
     for jar in user_jars: 
@@ -727,14 +721,6 @@ def budgetvsactual():
         except IndexError: 
             budgeted = 0
         budget.append({"id": jar["id"], "jar_name": jar["jar_name"], "amount": budgeted})
-
-    #append income and savings
-    budgeted_inc = budget_summary["income"]
-    budget.append({"jar_name": "income", "amount": budgeted_inc})
-
-    budgeted_sav = budget_summary["savings"]
-    budget.append({"jar_name": "savings", "amount": budgeted_sav})
-
 
     labels = [jar["jar_name"] for jar in jars]
     actual = [float(jar["amount"]) for jar in jars]
