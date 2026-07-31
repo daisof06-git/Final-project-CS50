@@ -78,8 +78,8 @@ select{
 }
 
 .alert.success {
-  background-color: #6fa675;
-  color: #06521b;
+  background-color: #b2b290;
+  color: #156a5e;
 }
 
 .alert.error {
@@ -94,7 +94,7 @@ select{
 
 .card-title{
    color: #9e0303; 
-   padding: 10px;
+   padding: 5px;
    margin: 20px;
 }
 

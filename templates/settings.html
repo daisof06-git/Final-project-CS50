@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Login
+{% endblock %}
+
+{% block main %}
+    <h1>Settings</h1>
+    <div class = "card">
+        <h2 class = "card-title">Change password</h2>
+        <form action = "/change_pass" method = "post">
+            <div class = "mb-3">
+                <input class="form-control mx-auto w-auto" name="current_pass" placeholder="Current password" type="password">
+            </div>
+            <div class="mb-3">
+                <input class="form-control mx-auto w-auto" name="new_pass" placeholder="New password" type="password">
+            </div>
+            <div class ="mb-3">
+                <input class="form-control mx-auto w-auto" name="confirmation" placeholder="Confirm new password" type="password">
+            </div>
+            <button class="btn btn-primary" type="submit">Confirm</button>    
+        </form>
+    </div>
+    <div class = "card" style = "background-color: #f04d4d;">
+        <h2 class="card-title">Delete your account</h2>
+        <form action="/delete_acc" method="post">
+            <input class="form-control mx-auto w-auto" name="password" placeholder="Insert your password" type="password" style="background-color:#f59f9f; border: darkred">                
+            <button class="btn btn-primary" type="submit">Delete account</button>
+        </form>
+    </div>
+    
+{% endblock %}

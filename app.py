@@ -412,6 +412,7 @@ def delete():
         flash("There has been a problem!", "error")
     return redirect("/jars")
 
+
 @app.route("/add", methods = ["POST"])
 @login_required
 def add(): 
@@ -969,6 +970,97 @@ def monthlytrends():
         jars.append(row["jars"])
 
     return jsonify({"labels": labels, "income": income, "savings": savings, "jars": jars})
+
+
+@app.route("/settings", methods = ["GET", "POST"])
+@login_required
+def settings():
+    if request.method == "GET" or request.method == "POST":
+        return render_template("settings.html")
+
+
+@app.route("/change_pass", methods = ["POST"])
+@login_required
+def change_pass():
+    id = session["user_id"]
+
+    if request.method == "POST":
+        #get values
+        current_pass = request.form.get("current_pass")
+        new_pass = request.form.get("new_pass")
+        confirmation = request.form.get("confirmation")
+        real_pass = db.execute("""
+        SELECT hash 
+        FROM users 
+        WHERE id = ?
+        """, id)[0]["hash"]
+
+        #validate password
+        if not current_pass:
+            flash("Must insert your current password", "error")
+            return redirect("/settings")
+
+        #confirm password is correct
+        if check_password_hash(real_pass, current_pass) == False:
+            flash("Incorrect password!", "error")
+            return redirect("/settings")
+
+        #validate new password
+        if not new_pass or not confirmation:
+            flash("Must insert and confirm new password!", "error")
+            return redirect("/settings")
+
+        #compare passwords
+        if new_pass != confirmation: 
+            flash("New password and confirmation do not match!")
+            return redirect("/settings")
+
+        #update password
+        hashpas = generate_password_hash(new_pass)
+        db.execute("""
+        UPDATE users
+        SET hash = ? 
+        WHERE id = ?
+        """, hashpas, id)
+
+        flash("You have successfully changed your password!", "success")
+        return redirect("/")
+
+
+@app.route("/delete_acc", methods = ["POST"])
+@login_required
+def delete_acc():
+    id =session["user_id"]
+
+    if request.method == "POST":
+        password = request.form.get("password")
+
+        #validate password
+        if not password:
+            flash("Must insert a valid password!")
+            return redirect("/settings")
+
+        #check password
+        real_pass = db.execute("""
+        SELECT hash 
+        FROM users 
+        WHERE id = ?
+        """)[0]["hash"]
+
+        if check_password_hash(real_pass, password) == False:
+            flash("Wrong password!", "error")
+            return redirect("/settings")
+
+        db.execute("""
+        DELETE 
+        FROM users 
+        WHERE id = ?
+        """, id)
+
+        session.clear()
+        flash("Account deleted successfully!", "success")
+        return render_template("login.html")
+
 
 
 if __name__ == '__main__':
