@@ -535,7 +535,12 @@ def budget_jars():
 
         current_balance = budget["balance"]
 
-         #find the jar value in db
+        #get jar_id
+        jar_id = db.execute(
+            "SELECT id AS id FROM jars WHERE jar_name = ? AND user_id = ?", jar_name, id
+            )[0]["id"]
+        
+        #find the jar value in db
         try:
             last_amount = db.execute(
                 "SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id
@@ -549,10 +554,6 @@ def budget_jars():
             flash("You wouldn't have enough money to spend that amount!", "error")
             return redirect("/budget")
 
-        #get jar_id
-        jar_id = db.execute(
-            "SELECT id AS id FROM jars WHERE jar_name = ? AND user_id = ?", jar_name, id
-            )[0]["id"]
         #check
         try:
             int(jar_id)
@@ -601,48 +602,9 @@ def stats():
     actual["jars"] = actual.pop("jars_total")
 
     #budgeted
-    budget = {}
-    #budgeted income
-    try:
-        budget_inc = db.execute("""
-        SELECT amount 
-        AS amount 
-        FROM budget 
-        WHERE user_id = ? AND type = 'income'
-        """, id)[0]["amount"]
-        budget_inc = float(budget_inc or 0)
-    except IndexError:
-        budget_inc = 0
-    budget["income"] = budget_inc
-
-    #budgeted savings
-    try:
-        budget_sav = db.execute("""
-        SELECT amount 
-        AS amount 
-        FROM budget 
-        WHERE user_id = ? AND type = 'savings'
-        """, id)[0]["amount"]
-        budget_sav = float(budget_sav or 0)
-    except IndexError:
-        budget_sav = 0
-    budget["savings"] = budget_sav
-
-    #budgeted jars
-    try:
-        budget_jar = db.execute("""
-        SELECT SUM(amount) 
-        AS total 
-        FROM budget 
-        WHERE user_id = ? AND type = 'jar'
-        """, id)[0]["total"]
-        budget_jar= float(budget_jar or 0)
-    except IndexError:
-        budget_jar = 0
-    budget["jars"] = budget_jar
-
-    budget_bal = budget_inc - budget_sav - budget_jar
-    budget["balance"] = budget_bal
+    budget = get_budget_summary(id)
+    budget["jars"] = budget.pop("jars_total")
+    
     if request.method == "GET": 
         return render_template("stats.html", username = username, actual=actual, budget = budget)
 
