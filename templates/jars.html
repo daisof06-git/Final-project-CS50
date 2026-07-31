@@ -12,7 +12,7 @@
                 <div class="d-flex flex-wrap gap-3">
                     {% for jar in jars %}
                         <div class="d-flex flex-column align-items-center">
-                            <img src = "/static/jar-empty.svg" style = "max-width: 60%" name = "{{jar.jar_name}}" class = "jar_display">
+                            <img src = "/static/jar-empty.svg" style = "max-width: 60%" alt = "{{jar.jar_name}}" class = "jar_display">
                             <p class = "mt-2">{{jar.jar_name}}</p>
                             <form action ="/delete" method = "post">
                                 <input name = "id" type = "hidden" value="{{jar.id}}">

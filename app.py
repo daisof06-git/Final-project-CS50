@@ -289,7 +289,7 @@ def add_savings():
 
         #get summary
         summary = get_month_summary(id)
-        savings = summary["savings"]
+        current_savings = summary["savings"]
         balance = summary["balance"]
 
         # Validate savings
@@ -306,7 +306,7 @@ def add_savings():
             return redirect("/savings")
 
         #validate
-        if savings > balance: 
+        if savings > balance + current_savings: 
             flash("Not enough money", "error")
             return redirect("/savings")
 
@@ -343,6 +343,18 @@ def delete():
     user_id = session["user_id"]
     id = request.form.get("id")
     if id: 
+        #delete from movements
+        db.execute("""
+        DELETE FROM movements 
+        WHERE jar_id = ? AND user_id = ?               
+        """, id, user_id)
+
+        #delete from budget
+        db.execute("""
+        DELETE FROM budget 
+        WHERE jar_id = ? AND user_id = ?
+        """, id, user_id)
+
         #delete from jars
         db.execute("""
         DELETE FROM jars 
@@ -802,6 +814,28 @@ def delete_acc():
             flash("Wrong password!", "error")
             return redirect("/settings")
 
+        #delete jars
+        db.execute("""
+        DELETE 
+        FROM jars
+        WHERE user_id = ?
+        """, id)
+
+        #delete movements
+        db.execute("""
+        DELETE 
+        FROM movements                
+        WHERE user_id = ?
+        """, id)
+
+        #delete budget
+        db.execute("""
+        DELETE 
+        FROM budget
+        WHERE user_id = ?
+        """, id)
+
+        #delete from users
         db.execute("""
         DELETE 
         FROM users 

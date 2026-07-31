@@ -34,7 +34,6 @@ CREATE TABLE budget(
     type TEXT NOT NULL CHECK((type = 'jar' AND jar_id IS NOT NULL) OR
     (type IN ('income','savings') AND jar_id IS NULL)), 
     FOREIGN KEY(user_id) REFERENCES users(id), 
-    FOREIGN KEY(jar_id) REFERENCES jars(id)
-    ON DELETE CASCADE,
+    FOREIGN KEY(jar_id) REFERENCES jars(id),
     UNIQUE(user_id, jar_id, type)
 );
