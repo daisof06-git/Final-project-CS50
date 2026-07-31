@@ -71,7 +71,7 @@ def register():
                 "INSERT INTO users(username, email, hash) VALUES (?,?, ?)", username, email, hashpas)
             flash("You have successfully registered!", "success")
             return redirect("/login")
-        except ValueError:
+        except RuntimeError:
             flash("Username or email already exists!", "error")
             return render_template("register.html")
 
@@ -219,6 +219,16 @@ def actualjars():
     if not jar: 
         flash("Must select a jar!", "error")
         return redirect("/") 
+
+    user_jars = db.execute("""
+    SELECT jar_name 
+    FROM jars 
+    WHERE user_id = ?
+    """, id)
+
+    if jar not in user_jars:
+        flash("Jar doesn't exist!", "error")
+        return redirect("/")
 
     #check action
     if not action:
@@ -432,7 +442,7 @@ def add():
         INTO jars (user_id, jar_name) 
         VALUES (?,?)
         """, user_id, name)
-    except ValueError:
+    except RuntimeError:
         flash("That jar already exists! User another name", "error")
         redirect("/")
     flash("Jar successfully added!", "success")
@@ -1077,4 +1087,4 @@ def delete_acc():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
