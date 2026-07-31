@@ -23,9 +23,6 @@ db = SQL("sqlite:///budget.db")
 # Custom filter
 app.jinja_env.filters["usd"] = usd
 
-#get date
-year_month = date.today().strftime('%Y-%m')
-
 @app.after_request
 def after_request(response):
     """Ensure responses aren't cached"""
@@ -128,6 +125,9 @@ def index():
     #get user id
     id = session["user_id"]
 
+    #get date
+    year_month = date.today().strftime('%Y-%m')
+
     #get and validate income
     income = db.execute("""
     SELECT SUM(amount) 
@@ -182,6 +182,9 @@ def actualjars():
     jar = request.form.get("jar")
     action = request.form.get("action")
     amount = request.form.get("amount")
+
+    #get date
+    year_month = date.today().strftime('%Y-%m')
     
     #get and validate income
     income = db.execute("""
@@ -321,6 +324,8 @@ def add_savings():
     if request.method == "POST": 
         id = session["user_id"]
         savings = request.form.get("savings")
+        #get date
+        year_month = date.today().strftime('%Y-%m')
 
         #get and validate income
         income = db.execute("""
@@ -338,7 +343,7 @@ def add_savings():
         FROM movements 
         WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
         """, id, year_month)[0]["total"]
-        current_savings = float(savings or 0)
+        current_savings = float(current_savings or 0)
         
         #get jars total amount
         jars_total = db.execute("""
@@ -533,7 +538,7 @@ def budget_income():
             UPDATE budget 
             SET amount = ? 
             WHERE user_id = ? AND type = 'income'
-            """, income)
+            """, income, id)
             flash("Expected income changed successfully!", "success")
             return redirect("/budget")
 
@@ -615,7 +620,7 @@ def budget_savings():
             UPDATE budget 
             SET amount = ? 
             WHERE user_id = ? AND type = 'savings'
-            """, savings)
+            """, savings, id)
             flash("Expected savings changed successfully!", "success")
             return redirect("/budget")
 
@@ -731,6 +736,8 @@ def logout():
 def stats():
     id = session["user_id"]
     username = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["username"]
+    #get date
+    year_month = date.today().strftime('%Y-%m')
 
     #actual
     actual = {}
@@ -833,6 +840,9 @@ def jar_dist():
     WHERE user_id = ?
     """, id)
 
+    #get date
+    year_month = date.today().strftime('%Y-%m')
+
     #create a list with all jars and amounts
     jars = []
     for jar in user_jars: 
@@ -861,6 +871,9 @@ def budgetvsactual():
     WHERE user_id = ?
     """, id)
 
+    #get date
+    year_month = date.today().strftime('%Y-%m')
+    
     #create a list with all jars and actual amounts
     jars = []
     for jar in user_jars: 
@@ -1045,7 +1058,7 @@ def delete_acc():
         SELECT hash 
         FROM users 
         WHERE id = ?
-        """)[0]["hash"]
+        """, id)[0]["hash"]
 
         if check_password_hash(real_pass, password) == False:
             flash("Wrong password!", "error")
