@@ -131,7 +131,7 @@ def index():
     #get summary
     summary = get_month_summary(id)
     savings = summary["savings"]
-    balance = summary["jars_balance"]
+    balance = summary["balance"]
 
     # get user jars
     user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
@@ -667,7 +667,7 @@ def logout():
     return redirect("/")
 
 
-@app.route("/stats", methods = ["GET", "POST"])
+@app.route("/stats", methods = ["GET"])
 @login_required
 def stats():
     id = session["user_id"]
@@ -743,6 +743,7 @@ def jar_dist():
     labels = []
     values = []
     jars = []
+
     for jar in user_jars: 
         amount = db.execute("""
         SELECT SUM(amount) 
