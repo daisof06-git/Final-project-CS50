@@ -11,7 +11,7 @@ CREATE TABLE jars(
     jar_name TEXT NOT NULL, 
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
-CREATE UNIQUE INDEX jar_name ON jars (jar_name);
+CREATE UNIQUE INDEX jar_name ON jars (user_id, jar_name);
 
 CREATE TABLE movements(
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,

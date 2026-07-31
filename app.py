@@ -4,7 +4,7 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import login_required, usd
+from helpers import login_required, usd, get_month_summary
 from datetime import date
 
 
@@ -128,35 +128,10 @@ def index():
     #get date
     year_month = date.today().strftime('%Y-%m')
 
-    #get and validate income
-    income = db.execute("""
-    SELECT SUM(amount) 
-    AS total 
-    FROM movements 
-    WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
-    """, id, year_month)[0]["total"]
-    income = float(income or 0)
-
-    #get and validate savings
-    savings = db.execute("""
-    SELECT SUM(amount) 
-    AS total 
-    FROM movements 
-    WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
-    """, id, year_month)[0]["total"]
-    savings = float(savings or 0)
-
-    #get jars total amount
-    jars_total = db.execute("""
-    SELECT SUM(amount) 
-    AS total 
-    FROM movements 
-    WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
-    """,id, year_month)[0]["total"]
-    jars_total = float(jars_total or 0)
-
-    #get remaining income
-    balance = income - savings - jars_total
+    #get summary
+    summary = get_month_summary(id)
+    savings = summary["savings"]
+    balance = summary["jars_balance"]
 
     # get user jars
     user_jars = db.execute("SELECT * FROM jars WHERE user_id = ?", id)
@@ -185,35 +160,10 @@ def actualjars():
 
     #get date
     year_month = date.today().strftime('%Y-%m')
-    
-    #get and validate income
-    income = db.execute("""
-    SELECT SUM(amount) 
-    AS total FROM movements 
-    WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
-    """, id, year_month)[0]["total"]        
-    income = float(income or 0)
-    
-    #get and validate savings
-    savings = db.execute("""
-    SELECT SUM(amount) 
-    AS total 
-    FROM movements 
-    WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
-    """, id, year_month)[0]["total"]
-    savings = float(savings or 0)
-    
-    #get jars total amount
-    jars_total = db.execute("""
-    SELECT SUM(amount)
-    AS total 
-    FROM movements 
-    WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
-    """,id, year_month)[0]["total"]        
-    jars_total = float(jars_total or 0)
-    
-    #get remaining income
-    balance = income - savings - jars_total
+
+    #get summary
+    summary = get_month_summary(id)
+    balance = summary["balance"]
 
     #check jar
     if not jar: 
@@ -226,7 +176,9 @@ def actualjars():
     WHERE user_id = ?
     """, id)
 
-    if jar not in user_jars:
+    user_jars_names = [j["jar_name"] for j in user_jars]
+
+    if jar not in user_jars_names:
         flash("Jar doesn't exist!", "error")
         return redirect("/")
 
@@ -334,37 +286,11 @@ def add_savings():
     if request.method == "POST": 
         id = session["user_id"]
         savings = request.form.get("savings")
-        #get date
-        year_month = date.today().strftime('%Y-%m')
 
-        #get and validate income
-        income = db.execute("""
-        SELECT SUM(amount) 
-        AS total 
-        FROM movements 
-        WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
-        """, id, year_month)[0]["total"]
-        income = float(income or 0)
-        
-        #get and validate savings
-        current_savings = db.execute("""
-        SELECT SUM(amount) 
-        AS total 
-        FROM movements 
-        WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
-        """, id, year_month)[0]["total"]
-        current_savings = float(current_savings or 0)
-        
-        #get jars total amount
-        jars_total = db.execute("""
-        SELECT SUM(amount) 
-        AS total FROM movements 
-        WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
-        """,id, year_month)[0]["total"]
-        jars_total = float(jars_total or 0)
-        
-        #get remaining income
-        balance = income - current_savings - jars_total
+        #get summary
+        summary = get_month_summary(id)
+        savings = summary["savings"]
+        balance = summary["balance"]
 
         # Validate savings
         if not savings:
@@ -444,7 +370,7 @@ def add():
         """, user_id, name)
     except RuntimeError:
         flash("That jar already exists! User another name", "error")
-        redirect("/")
+        return redirect("/")
     flash("Jar successfully added!", "success")
     return redirect("/jars")
 
@@ -749,49 +675,9 @@ def stats():
     #get date
     year_month = date.today().strftime('%Y-%m')
 
-    #actual
-    actual = {}
-    #actual income
-    try:
-        actual_inc = db.execute("""
-        SELECT SUM(amount) 
-        AS amount 
-        FROM movements 
-        WHERE user_id = ? AND type = 'income' AND strftime('%Y-%m', date) = ?
-        """, id, year_month)[0]["amount"]
-        actual_inc = float(actual_inc or 0)
-    except IndexError:
-        actual_inc = 0
-    actual["income"] = actual_inc
-
-    #actual savings
-    try:
-        actual_sav = db.execute("""
-        SELECT SUM(amount) 
-        AS amount 
-        FROM movements 
-        WHERE user_id = ? AND type = 'savings' AND strftime('%Y-%m', date) = ?
-        """, id, year_month)[0]["amount"]
-        actual_sav = float(actual_sav or 0)
-    except IndexError:
-        actual_sav = 0
-    actual["savings"] = actual_sav
-
-    #actual jars
-    try:
-        actual_jar = db.execute("""
-        SELECT SUM(amount) 
-        AS total 
-        FROM movements 
-        WHERE user_id = ? AND type = 'jar' AND strftime('%Y-%m', date) = ?
-        """, id, year_month)[0]["total"]
-        actual_jar= float(actual_jar or 0)
-    except IndexError:
-        actual_jar = 0
-    actual["jars"] = actual_jar
-
-    actual_bal = actual_inc - actual_sav - actual_jar
-    actual["balance"] = actual_bal
+    #get_summary as actual
+    actual = get_month_summary(id)
+    actual["jars"] = actual.pop("jars_total")
 
     #budgeted
     budget = {}
@@ -854,6 +740,8 @@ def jar_dist():
     year_month = date.today().strftime('%Y-%m')
 
     #create a list with all jars and amounts
+    labels = []
+    values = []
     jars = []
     for jar in user_jars: 
         amount = db.execute("""
