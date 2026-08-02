@@ -194,6 +194,10 @@ def actualjars():
         flash("Must insert a positive amount", "error")
         return redirect("/")
 
+    if amount <= 0:
+        flash("Must insert a positive amount!", "error")
+        return redirect("/")
+
     jar_id = db.execute(
         "SELECT * FROM jars WHERE user_id = ? AND jar_name = ?", id, jar
         )[0]["id"]
@@ -306,12 +310,12 @@ def add_savings():
             return redirect("/savings")
 
         #validate
-        if savings > balance + current_savings: 
+        if savings > balance:
             flash("Not enough money", "error")
             return redirect("/savings")
 
         # update savings and balance
-        if not balance: 
+        if balance <= 0: 
             flash("Not enough money", "error")
             return redirect("/savings")
         
@@ -570,7 +574,7 @@ def budget_jars():
         try:
             int(jar_id)
         except ValueError: 
-            flash("There has been a problem!", "erorr")
+            flash("There has been a problem!", "error")
             return redirect("/budget")
 
         
@@ -775,7 +779,7 @@ def change_pass():
 
         #compare passwords
         if new_pass != confirmation: 
-            flash("New password and confirmation do not match!")
+            flash("New password and confirmation do not match!", "error")
             return redirect("/settings")
 
         #update password
@@ -800,7 +804,7 @@ def delete_acc():
 
         #validate password
         if not password:
-            flash("Must insert a valid password!")
+            flash("Must insert a valid password!", "error")
             return redirect("/settings")
 
         #check password
