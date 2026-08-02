@@ -55,6 +55,14 @@
                 </div>
             </div>
         </div>
+        <div class = "card">
+            <h2 class = "card-title">Insights</h2>
+            {% if savings_rate is not none %}
+                <p>Savings rate = {{savings_rate}}%</p>
+            {% else %}
+                <p>Savings rate = No income logged in yet this month</p>
+            {% endif %}
+        </div>
     </div>
 
     <script>

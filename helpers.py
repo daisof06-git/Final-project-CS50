@@ -68,3 +68,14 @@ def get_budget_summary(user_id):
         "jars_total": jars_total,
         "balance": balance,
         }
+
+def get_savings_rate(user_id):
+    summary = get_month_summary(user_id)
+    income = summary["income"]
+
+    if income > 0:
+        rate = (summary["savings"]/income) * 100
+        return round(rate,1)
+
+    else:
+        return None

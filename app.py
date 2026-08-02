@@ -4,7 +4,7 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import login_required, usd, get_month_summary, get_budget_summary
+from helpers import login_required, usd, get_month_summary, get_budget_summary, get_savings_rate
 from datetime import date
 
 
@@ -610,8 +610,6 @@ def logout():
 def stats():
     id = session["user_id"]
     username = db.execute("SELECT * FROM users WHERE id = ?", id)[0]["username"]
-    #get date
-    year_month = date.today().strftime('%Y-%m')
 
     #get_summary as actual
     actual = get_month_summary(id)
@@ -620,9 +618,13 @@ def stats():
     #budgeted
     budget = get_budget_summary(id)
     budget["jars"] = budget.pop("jars_total")
+
+    #savings rate
+    savings_rate = get_savings_rate(id)
     
     if request.method == "GET": 
-        return render_template("stats.html", username = username, actual=actual, budget = budget)
+        return render_template("stats.html", username = username, actual=actual, budget = budget, savings_rate = savings_rate)
+
 
 @app.route("/api/jar_distribution", methods = ["GET", "POST"])
 @login_required
