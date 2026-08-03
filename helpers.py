@@ -16,9 +16,11 @@ def login_required(f):
 
     return decorated_function
 
+
 def usd(value):
     #Format value as usd
     return f"${value:,.2f}"
+
 
 def get_month_summary(user_id, year_month = None): 
     if year_month == None:
@@ -46,6 +48,7 @@ def get_month_summary(user_id, year_month = None):
         "balance": balance,
     }
 
+
 def get_budget_summary(user_id):
     row = db.execute("""
         SELECT 
@@ -69,6 +72,7 @@ def get_budget_summary(user_id):
         "balance": balance,
         }
 
+
 def get_savings_rate(user_id):
     summary = get_month_summary(user_id)
     income = summary["income"]
@@ -79,3 +83,42 @@ def get_savings_rate(user_id):
 
     else:
         return None
+
+
+def get_budget_deviation(actual, budget):
+    if budget["jars"] == 0:
+        return None
+
+    else:
+        deviation = ((actual["jars"] - budget["jars"])/budget["jars"])*100
+        return round(deviation,1)
+
+
+def get_top_jar(user_id):
+    year_month = date.today().strftime('%Y-%m')
+    rows = db.execute("""
+    SELECT jars.jar_name AS jar_name, SUM(movements.amount) AS total
+    FROM jars
+    JOIN movements 
+    ON jars.id = movements.jar_id
+    WHERE movements.user_id = ? AND movements.type = 'jar' AND strftime('%Y-%m', movements.date) = ?
+    ORDER BY total DESC
+    LIMIT 1 
+    """, user_id, year_month)
+
+    if not rows: 
+        return None
+
+    return{"jar_name": rows[0]["jar_name"], "amount": float(rows[0]["total"])}
+
+
+def get_total_saved(user_id):
+    year = date.today().strftime('%Y')
+
+    total_saved = db.execute("""
+    SELECT SUM(amount) AS total
+    FROM movements
+    WHERE user_id = ? AND type = 'savings' AND strftime('%Y', date) = ?
+    """, user_id, year)[0]["total"]
+
+    return float(total_saved or 0)

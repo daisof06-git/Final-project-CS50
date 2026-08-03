@@ -62,6 +62,21 @@
             {% else %}
                 <p>Savings rate = No income logged in yet this month</p>
             {% endif %}
+
+            {% if deviation is not none %}
+                <p>Budget Deviation = {{deviation}}%</p>
+            {% else %}
+                <p>Budget Deviation = No jar budget set yet </p>
+            {% endif %}
+
+            {% if top_jar is not none %}
+                <p>Top jar this month = {{top_jar.jar_name}} with {{top_jar.amount | usd}}</p>
+            {% else %}
+                <p>Top jar = Nojar movements yet this month </p>
+            {% endif %}
+
+            <p>Total saved this year = {{total_saved | usd}}</p>
+        
         </div>
     </div>
 

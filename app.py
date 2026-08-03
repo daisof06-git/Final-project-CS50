@@ -4,7 +4,7 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import login_required, usd, get_month_summary, get_budget_summary, get_savings_rate
+from helpers import login_required, usd, get_month_summary, get_budget_summary, get_savings_rate, get_budget_deviation, get_top_jar, get_total_saved
 from datetime import date
 
 
@@ -621,9 +621,25 @@ def stats():
 
     #savings rate
     savings_rate = get_savings_rate(id)
+
+    #budget deviation
+    deviation = get_budget_deviation(actual, budget)
+
+    #top jar 
+    top_jar = get_top_jar(id)
+
+    #total saved this year
+    total_saved = get_total_saved(id)
     
     if request.method == "GET": 
-        return render_template("stats.html", username = username, actual=actual, budget = budget, savings_rate = savings_rate)
+        return render_template(
+            "stats.html", 
+            username = username, 
+            actual=actual, budget = budget,
+            savings_rate = savings_rate, 
+            deviation=deviation,
+            top_jar = top_jar, 
+            total_saved = total_saved)
 
 
 @app.route("/api/jar_distribution", methods = ["GET", "POST"])
