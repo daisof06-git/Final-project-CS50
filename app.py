@@ -566,7 +566,7 @@ def budget_jars():
 
         if not jar_row: 
             flash("Jar doesn't exist!", "error")
-            return("/budget")
+            return redirect("/budget")
 
         jar_id = jar_row[0]["id"]
 
@@ -750,7 +750,7 @@ def monthlytrends():
 
     for row in rows:
         labels.append(row["month"])
-        income.append(row["income"])
+        income.append(float(row["income"]))
         savings.append(row["savings"])
         jars.append(row["jars"])
 
