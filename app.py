@@ -12,6 +12,9 @@ from datetime import date
 # Configure application
 app = Flask(__name__)
 
+#configure secret key
+app.secret_key = os.urandom(32)
+
 # Configure session to use filesystem (instead of signed cookies)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
@@ -385,7 +388,7 @@ def add():
         VALUES (?,?)
         """, user_id, name)
     except RuntimeError:
-        flash("That jar already exists! User another name", "error")
+        flash("That jar already exists! Use another name", "error")
         return redirect("/")
     flash("Jar successfully added!", "success")
     return redirect("/jars")
@@ -481,6 +484,7 @@ def budget_savings():
         if not savings:
             flash("Must insert a valid amount", "error")
             return redirect("/budget")
+        
         try:
             savings = float(savings)
         except ValueError:
@@ -501,17 +505,14 @@ def budget_savings():
             flash("You wouldn't have enough money to save that amount!", "error")
             return redirect("/budget")
 
-        if current_savings == 0: 
-            #insert expected savings
-            db.execute("""
-            INSERT 
-            INTO budget(user_id, type, amount) 
-            VALUES(?,?,?)
-            """, id, 'savings', savings)
-            flash("Expected savings added successfully!", "success")
-            return redirect("/budget")
+        existing_row = db.execute("""
+        SELECT amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'savings'
+        """, id)
+        row_exists = len(existing_row) > 0
 
-        elif current_savings > 0: 
+        if row_exists: 
             #update savings
             db.execute("""
             UPDATE budget 
@@ -521,6 +522,15 @@ def budget_savings():
             flash("Expected savings changed successfully!", "success")
             return redirect("/budget")
 
+        else: 
+            #insert expected savings
+            db.execute("""
+            INSERT 
+            INTO budget(user_id, type, amount) 
+            VALUES(?,?,?)
+            """, id, 'savings', savings)
+            flash("Expected savings added successfully!", "success")
+            return redirect("/budget")
 
 @app.route("/budget_jars", methods = ["POST"])
 @login_required
@@ -542,8 +552,6 @@ def budget_jars():
         except (ValueError, TypeError): 
             flash("Must insert a valid amount", "error")
             return redirect("/budget")
-
-        amount = float(amount or 0)
         
         if amount < 0: 
             flash("Must insert a valid amount", "error")
@@ -552,33 +560,26 @@ def budget_jars():
         current_balance = budget["balance"]
 
         #get jar_id
-        jar_id = db.execute(
+        jar_row = db.execute(
             "SELECT id AS id FROM jars WHERE jar_name = ? AND user_id = ?", jar_name, id
-            )[0]["id"]
-        
-        #find the jar value in db
-        try:
-            last_amount = db.execute(
-                "SELECT amount FROM  budget WHERE user_id = ? AND type = 'jar' AND jar_id = ?", id, jar_id
-                )[0]["amount"]
-        except IndexError:
-            last_amount = 0
-        last_amount = float(last_amount or 0)
+            )
 
-        #compare with budgeted balance
-        if amount > current_balance + last_amount: 
-            flash("You wouldn't have enough money to spend that amount!", "error")
-            return redirect("/budget")
+        if not jar_row: 
+            flash("Jar doesn't exist!", "error")
+            return("/budget")
 
-        #check
-        try:
-            int(jar_id)
-        except ValueError: 
-            flash("There has been a problem!", "error")
-            return redirect("/budget")
+        jar_id = jar_row[0]["id"]
 
+        #check if there's an amount
+        existing_row = db.execute("""
+        SELECT amount 
+        FROM budget 
+        WHERE user_id = ? AND type = 'jar' AND jar_id = ?
+        """, id, jar_id)
 
-        if last_amount:
+        row_exists = len(existing_row)
+
+        if row_exists: 
             db.execute(
                 "UPDATE budget SET amount = ? WHERE user_id = ? AND type = 'jar' AND jar_id = ?", amount, id, jar_id
                 )
