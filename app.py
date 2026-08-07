@@ -577,7 +577,6 @@ def budget_jars():
             flash("There has been a problem!", "error")
             return redirect("/budget")
 
-        
 
         if last_amount:
             db.execute(
